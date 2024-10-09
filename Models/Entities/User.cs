@@ -19,6 +19,7 @@ namespace budget_api.Models.Entities
         public string Password { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdateAt { get; set; }
+        public ICollection<Wallets> Wallets { get; set; } = new List<Wallets>();
         public string Currency { get; set; } = "USD";
     }
 }

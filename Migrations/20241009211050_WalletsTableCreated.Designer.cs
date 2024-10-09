@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using budget_api.DbConext;
 
@@ -11,9 +12,11 @@ using budget_api.DbConext;
 namespace budget_api.Migrations
 {
     [DbContext(typeof(BudgetsDbContext))]
-    partial class BudgetsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241009211050_WalletsTableCreated")]
+    partial class WalletsTableCreated
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

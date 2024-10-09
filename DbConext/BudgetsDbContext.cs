@@ -8,5 +8,6 @@ namespace budget_api.DbConext
         //Inject DBContextOptions
         public BudgetsDbContext(DbContextOptions<BudgetsDbContext> options) : base(options)  { }
         public DbSet<User> Users { get; set; }
+        public DbSet<Wallets> Wallets { get; set; }
     }
 }
