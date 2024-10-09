@@ -1,6 +1,14 @@
 
 using budget_api.DbConext;
+using budget_api.Extensions;
+using budget_api.Models.Entities;
+using budget_api.Repositories;
+using budget_api.Repositories.Interface;
+using budget_api.Services;
+using budget_api.Services.Interface;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
 namespace budget_api
@@ -19,9 +27,17 @@ namespace budget_api
 
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+            //Logger Congfiguration
+            builder.Host.UseSerilog();
 
-            builder.Services.AddControllers();
+            //Configure Controllers
+            builder.Services.AddControllers(opt =>
+            {
+                opt.ReturnHttpNotAcceptable = true;
+            }).AddXmlDataContractSerializerFormatters();
+
+            builder.Services.AddProblemDetails();
+
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -33,6 +49,38 @@ namespace budget_api
                     dbContextOptions.UseSqlServer(builder.Configuration["ConnectionStrings:BudgetsInfoDbConnection"]);
                 });
 
+            // Register PasswordHasher
+            builder.Services.AddScoped<PasswordHasher<User>>();
+
+            //builder.Services.ConfigureServices();
+            #region Registered Services & Repositories
+            //Register Services
+            builder.Services.AddTransient<IAuthenticationService, AuthenticationService>();
+
+            //Register Repositories
+            builder.Services.AddScoped<IUserRepository, UserRepository>();
+            #endregion
+
+            //Configure AutoMapper
+            builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+            //Configure API Authentication
+            builder.Services.AddAuthentication("Bearer")
+                .AddJwtBearer(opt =>
+                {
+                    opt.TokenValidationParameters = new()
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = builder.Configuration["Authentication:Issuer"],
+                        ValidAudience = builder.Configuration["Authentication:Audience"],
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Convert.FromBase64String(
+                                builder.Configuration["Authentication:SecretForKey"]))
+                    };
+                });
+            
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

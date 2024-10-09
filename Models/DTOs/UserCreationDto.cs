@@ -1,13 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace budget_api.Models.Entities
+namespace budget_api.Models.DTOs
 {
-    public class User
+    public class UserCreationDto
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public Guid Id { get; set; }
         [Required]
         [MaxLength(50)]
         public string FirstName { get; set; }
@@ -17,8 +13,6 @@ namespace budget_api.Models.Entities
         public string Email { get; set; }
         [Required]
         public string Password { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdateAt { get; set; }
         public string Currency { get; set; } = "USD";
     }
 }
