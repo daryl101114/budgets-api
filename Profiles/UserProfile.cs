@@ -10,7 +10,7 @@ namespace budget_api.Profiles
             CreateMap<User, UserCreationDto>().ReverseMap();
             CreateMap<User, UserDto>();
             CreateMap<UserDto, User>();
-
+            CreateMap<User, UserWalletsDto>().ReverseMap();
         }
     }
 }

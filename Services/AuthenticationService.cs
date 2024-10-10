@@ -50,6 +50,7 @@ namespace budget_api.Services
             claimsForToken.Add(new Claim("given_name", validatedUser.FirstName));
             claimsForToken.Add(new Claim("family_name", validatedUser.LastName));
             claimsForToken.Add(new Claim("email", validatedUser.Email));
+            claimsForToken.Add(new Claim("userId", validatedUser.Id.ToString()));
 
             //Create a Token 
             var jwtSecurityToken = new JwtSecurityToken(

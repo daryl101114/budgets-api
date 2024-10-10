@@ -10,7 +10,7 @@ namespace budget_api.Models.Entities
         public Guid Id { get; set; }
         [ForeignKey("UserId")]
         public User? User { get; set; }
-        public Guid UserId { get; set; }
+        public Guid UserId { get; set; } = new Guid();
         [Required]
         [MaxLength(100)]
         public string AccountName { get; set; }

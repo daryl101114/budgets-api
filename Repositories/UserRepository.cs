@@ -18,6 +18,15 @@ namespace budget_api.Repositories
             return await _context.Users.FirstOrDefaultAsync(c => c.Email == email);
         }
 
+        public async Task<User?> GetUserWalletsAsync(Guid userId)
+        {
+            var userWallets = await _context.Users.Include(u => u.Wallets)
+                .Where(u => u.Id == userId)
+                .FirstOrDefaultAsync();
+
+            return userWallets;
+        }
+
         public async Task AddUser(User user)
         {
             await _context.Users.AddAsync(user);

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using System.Text.Json.Serialization;
 
 namespace budget_api
 {
@@ -34,7 +35,11 @@ namespace budget_api
             builder.Services.AddControllers(opt =>
             {
                 opt.ReturnHttpNotAcceptable = true;
-            }).AddXmlDataContractSerializerFormatters();
+            }).AddXmlDataContractSerializerFormatters()
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+            });
 
             builder.Services.AddProblemDetails();
 
@@ -52,14 +57,8 @@ namespace budget_api
             // Register PasswordHasher
             builder.Services.AddScoped<PasswordHasher<User>>();
 
-            //builder.Services.ConfigureServices();
-            #region Registered Services & Repositories
-            //Register Services
-            builder.Services.AddTransient<IAuthenticationService, AuthenticationService>();
-
-            //Register Repositories
-            builder.Services.AddScoped<IUserRepository, UserRepository>();
-            #endregion
+            //Adds Service and Repositories Implementations to Dependency Injection
+            builder.Services.ConfigureServices();
 
             //Configure AutoMapper
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
