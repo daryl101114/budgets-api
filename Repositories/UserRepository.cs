@@ -20,7 +20,7 @@ namespace budget_api.Repositories
 
         public async Task<User?> GetUserWalletsAsync(Guid userId)
         {
-            var userWallets = await _context.Users.Include(u => u.Wallets)
+            var userWallets = await _context.Users.Include(u => u.Wallets).ThenInclude(w => w.WalletType)
                 .Where(u => u.Id == userId)
                 .FirstOrDefaultAsync();
 

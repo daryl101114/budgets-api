@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using budget_api.DbConext;
 
@@ -11,9 +12,11 @@ using budget_api.DbConext;
 namespace budget_api.Migrations
 {
     [DbContext(typeof(BudgetsDbContext))]
-    partial class BudgetsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241014194420_add-emoji-column-to-wallet-table")]
+    partial class addemojicolumntowallettable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -60,22 +63,6 @@ namespace budget_api.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("budget_api.Models.Entities.WalletType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Type")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("WalletTypes");
-                });
-
             modelBuilder.Entity("budget_api.Models.Entities.Wallets", b =>
                 {
                     b.Property<Guid>("Id")
@@ -86,6 +73,10 @@ namespace budget_api.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("AccountType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<double?>("Balance")
                         .HasColumnType("float");
@@ -102,14 +93,9 @@ namespace budget_api.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("WalletTypeId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("WalletTypeId");
 
                     b.ToTable("Wallets");
                 });
@@ -122,21 +108,10 @@ namespace budget_api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("budget_api.Models.Entities.WalletType", "WalletType")
-                        .WithMany("Wallets")
-                        .HasForeignKey("WalletTypeId");
-
                     b.Navigation("User");
-
-                    b.Navigation("WalletType");
                 });
 
             modelBuilder.Entity("budget_api.Models.Entities.User", b =>
-                {
-                    b.Navigation("Wallets");
-                });
-
-            modelBuilder.Entity("budget_api.Models.Entities.WalletType", b =>
                 {
                     b.Navigation("Wallets");
                 });

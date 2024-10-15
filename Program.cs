@@ -27,6 +27,16 @@ namespace budget_api
                 .CreateLogger();
 
             var builder = WebApplication.CreateBuilder(args);
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowSpecificOrigin",
+                    builder =>
+                    {
+                        builder.WithOrigins("http://localhost:5173")
+                               .AllowAnyMethod()
+                               .AllowAnyHeader();
+                    });
+            });
 
             //Logger Congfiguration
             builder.Host.UseSerilog();
@@ -88,6 +98,7 @@ namespace budget_api
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            app.UseCors("AllowSpecificOrigin");
 
             app.UseHttpsRedirection();
 

@@ -9,5 +9,9 @@ namespace budget_api.DbConext
         public BudgetsDbContext(DbContextOptions<BudgetsDbContext> options) : base(options)  { }
         public DbSet<User> Users { get; set; }
         public DbSet<Wallets> Wallets { get; set; }
+        public DbSet<WalletType> WalletTypes { get; set; }
+        public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<TransactionCategory> TransactionCategory { get; set; }
+
     }
 }

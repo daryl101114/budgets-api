@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using budget_api.DbConext;
 
@@ -11,9 +12,11 @@ using budget_api.DbConext;
 namespace budget_api.Migrations
 {
     [DbContext(typeof(BudgetsDbContext))]
-    partial class BudgetsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241015010837_add-walet-types-relation")]
+    partial class addwalettypesrelation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -60,7 +63,7 @@ namespace budget_api.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("budget_api.Models.Entities.WalletType", b =>
+            modelBuilder.Entity("budget_api.Models.Entities.WalletTypes", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -102,14 +105,14 @@ namespace budget_api.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("WalletTypeId")
+                    b.Property<int?>("WalletTypesId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("WalletTypeId");
+                    b.HasIndex("WalletTypesId");
 
                     b.ToTable("Wallets");
                 });
@@ -122,13 +125,13 @@ namespace budget_api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("budget_api.Models.Entities.WalletType", "WalletType")
+                    b.HasOne("budget_api.Models.Entities.WalletTypes", "WalletTypes")
                         .WithMany("Wallets")
-                        .HasForeignKey("WalletTypeId");
+                        .HasForeignKey("WalletTypesId");
 
                     b.Navigation("User");
 
-                    b.Navigation("WalletType");
+                    b.Navigation("WalletTypes");
                 });
 
             modelBuilder.Entity("budget_api.Models.Entities.User", b =>
@@ -136,7 +139,7 @@ namespace budget_api.Migrations
                     b.Navigation("Wallets");
                 });
 
-            modelBuilder.Entity("budget_api.Models.Entities.WalletType", b =>
+            modelBuilder.Entity("budget_api.Models.Entities.WalletTypes", b =>
                 {
                     b.Navigation("Wallets");
                 });

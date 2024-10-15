@@ -14,10 +14,12 @@ namespace budget_api.Models.Entities
         [Required]
         [MaxLength(100)]
         public string AccountName { get; set; }
-        [Required]
-        public string AccountType { get; set; }
+        [ForeignKey("WalletTypeId")]
+        public WalletType? WalletType { get; set; }
+        public int? WalletTypeId { get; set; }
         public double? Balance { get; set; } = 0.00;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public string? Currency { get; set; }
+        public string? Emoji { get; set; }
     }
 }
