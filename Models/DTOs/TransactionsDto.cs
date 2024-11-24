@@ -1,22 +1,14 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using budget_api.Models.Entities;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
-namespace budget_api.Models.Entities
+namespace budget_api.Models.DTOs
 {
-    public enum TransactionType
+    public class TransactionsDto
     {
-        Credit,
-        Debit
-    }
-    public class Transaction
-    {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
-        [ForeignKey("WalletId")]
-        public Wallets? Wallet { get; set; }
         public Guid WalletId { get; set; }
-        [Required]
+        public Wallets? Wallet { get; set; }
         public string TransactionName { get; set; }
         public string? TransactionDescription { get; set; }
         public double Amount { get; set; }
@@ -24,7 +16,6 @@ namespace budget_api.Models.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public bool IsRecurring { get; set; }
         public string TransactionType { get; set; }
-        [ForeignKey("TransactionCategoryId")]
         public TransactionCategory? TransactionCategory { get; set; }
         public Guid TransactionCategoryId { get; set; }
     }

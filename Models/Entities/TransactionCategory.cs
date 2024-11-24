@@ -10,5 +10,7 @@ namespace budget_api.Models.Entities
         public Guid Id { get; set; }
         public string TransactionCategoryName { get; set; }
         public bool IsFixed { get; set; }
+        public string Icon { get; set; }
+        public string Color { get; set; }
     }
 }

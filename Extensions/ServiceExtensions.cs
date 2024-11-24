@@ -14,9 +14,11 @@ namespace budget_api.Extensions
             //Register Services
             services.AddTransient<IAuthenticationService, AuthenticationService>();
             services.AddTransient<IWalletService, WalletService>();
+            services.AddTransient<ITransactionService, TransactionService>();
             //Register Repositories
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IWalletRepository, WalletRepository>();
+            services.AddScoped<ITransactionRepository, TransactionRepository>();
         }
     }
 }
