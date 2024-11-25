@@ -74,7 +74,7 @@ namespace budget_api.Controllers
                 {
                     return StatusCode(404, "No Transaction found");
                 }
-                //Handle Update
+                //Handle Upodate
                 await _transactionService.UpdateTransactionAsync(existingTransaction, transactionUpdateDto);
                 return StatusCode(200, "Updated Record!");
             }
