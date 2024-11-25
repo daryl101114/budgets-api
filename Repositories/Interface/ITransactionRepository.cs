@@ -8,5 +8,7 @@ namespace budget_api.Repositories.Interface
         Task<IEnumerable<TransactionCategory>> GetTransactionCategoriesAsync();
         Task<bool> SaveTransactionAsync();
         Task<IEnumerable<Transaction>> GetTransactionsAsync(Guid walletId);
+        Task<Transaction?> GetTransactionByIdAsync(Guid transactionId);
+        void UpdateTransactionAsync(Transaction transaction);
     }
 }

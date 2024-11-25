@@ -9,6 +9,7 @@ namespace budget_api.Profiles
     {
         public TransactionProfile() {
             CreateMap<Transaction, TransactionCreationDto>().ReverseMap();
+            CreateMap<Transaction, TransactionUpdateDto>().ReverseMap();
             CreateMap<Transaction, TransactionsDto>().ReverseMap();
         }
     }

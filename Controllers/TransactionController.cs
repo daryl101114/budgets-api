@@ -1,4 +1,5 @@
 ﻿using budget_api.Models.DTOs;
+using budget_api.Models.Entities;
 using budget_api.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -61,5 +62,27 @@ namespace budget_api.Controllers
             }
         }
 
+        [HttpPut("EditTransaction")]
+        public async Task<IActionResult> UpdateTransaction(TransactionUpdateDto transactionUpdateDto)
+        {
+            try
+            {
+                //Find if transaction record exist in DB
+                var existingTransaction = await _transactionService.GetTransactionByIdAsync(transactionUpdateDto.Id);
+                //Handle no record found
+                if (existingTransaction == null)
+                {
+                    return StatusCode(404, "No Transaction found");
+                }
+                //Handle Upodate
+                await _transactionService.UpdateTransactionAsync(existingTransaction, transactionUpdateDto);
+                return StatusCode(201, "Updated Record!");
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError($"Failed to retreive transactions for {transactionUpdateDto.Id}", ex);
+                return StatusCode(500, "Something went wrong while updating a transaction");
+            }
+        }
     }
 }
