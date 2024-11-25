@@ -76,7 +76,7 @@ namespace budget_api.Controllers
                 }
                 //Handle Upodate
                 await _transactionService.UpdateTransactionAsync(existingTransaction, transactionUpdateDto);
-                return StatusCode(201, "Updated Record!");
+                return StatusCode(200, "Updated Record!");
             }
             catch(Exception ex)
             {
