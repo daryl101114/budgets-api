@@ -41,11 +41,6 @@ namespace budget_api.Repositories
             //Save entity when 0 or more entities have been saved
             return (await _context.SaveChangesAsync() >= 0);
         }
-        public  void SaveChanges()
-        {
-            //Save entity when 0 or more entities have been saved
-            _context.SaveChanges();
-        }
 
         public void UpdateTransactionAsync(Transaction transaction)
         {
