@@ -75,7 +75,7 @@ namespace budget_api.Services
 
             //Hash Password
             var hashedPassword = HashPassword(mappedUser);
-            mappedUser.Password = hashedPassword;
+            mappedUser.PasswordHash = hashedPassword;
             mappedUser.CreatedAt = DateTime.UtcNow;
 
             //Store new user
@@ -106,12 +106,12 @@ namespace budget_api.Services
         }
         private string HashPassword(User user)
         {
-            var hashedPassword =  _passwordHasher.HashPassword(user, user.Password);
+            var hashedPassword =  _passwordHasher.HashPassword(user, user.PasswordHash);
             return hashedPassword;
         }
         private bool VerifyPassword(User user, string password)
         {
-            var result = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
+            var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
             return result == PasswordVerificationResult.Success;
         }
     }
