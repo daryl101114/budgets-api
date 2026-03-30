@@ -14,3 +14,4 @@ namespace budget_api.Profiles
         }
     }
 }
+

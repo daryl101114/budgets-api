@@ -6,7 +6,7 @@ namespace budget_api.Services.Interface
 {
     public interface IAuthenticationService
     {
-        Task<ActionResult<String?>?> AuthenticateAsync(AuthenticationRequestBodyDto authRequestBody);
+        Task<ActionResult<String>?> AuthenticateAsync(AuthenticationRequestBodyDto authRequestBody);
         Task<ActionResult<User>> RegisterAsync(UserCreationDto user);
     }
 }

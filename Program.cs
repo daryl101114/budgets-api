@@ -33,6 +33,7 @@ namespace budget_api
                     builder =>
                     {
                         builder.WithOrigins("http://localhost:5173")
+                               .AllowCredentials() // Important: allow sending cookies
                                .AllowAnyMethod()
                                .AllowAnyHeader();
                     });
@@ -89,7 +90,6 @@ namespace budget_api
                                 builder.Configuration["Authentication:SecretForKey"]))
                     };
                 });
-            
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
