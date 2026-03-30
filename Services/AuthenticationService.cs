@@ -70,7 +70,7 @@ namespace budget_api.Services
 
         public async Task<ActionResult<User>> RegisterAsync(UserCreationDto user)
         {
-            //Create new User
+            //Create new User 
             User mappedUser = _mapper.Map<User>(user);
 
             //Hash Password

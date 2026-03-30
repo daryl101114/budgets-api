@@ -17,6 +17,11 @@ namespace budget_api.Repositories
             await _context.Transactions.AddAsync(transaction);
         }
 
+        public async Task<Transaction?> GetTransactionByIdAsync(Guid transactionId)
+        {
+           return await _context.Transactions.Where(t => t.Id == transactionId).FirstOrDefaultAsync();
+        }
+
         public async Task<IEnumerable<TransactionCategory>> GetTransactionCategoriesAsync()
         {
             return await _context.TransactionCategory.ToListAsync();
@@ -35,6 +40,11 @@ namespace budget_api.Repositories
         {
             //Save entity when 0 or more entities have been saved
             return (await _context.SaveChangesAsync() >= 0);
+        }
+
+        public void UpdateTransactionAsync(Transaction transaction)
+        {
+            _context.Update(transaction);
         }
     }
 }

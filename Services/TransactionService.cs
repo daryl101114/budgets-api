@@ -40,7 +40,22 @@ namespace budget_api.Services
                 mappedTransactions.Add(mapped);
             }
             return mappedTransactions;
+        }
 
+        public async Task<Transaction?> GetTransactionByIdAsync(Guid transactionId)
+        {
+            var transaction = await _transactionRepository.GetTransactionByIdAsync(transactionId);
+            return transaction;
+        }
+
+        public async Task UpdateTransactionAsync(Transaction transaction, TransactionUpdateDto transactionUpdateDto)
+        {
+            //Map transactionUpdateDto values -> transaction
+            var updatedTransaction = _mapper.Map(transactionUpdateDto, transaction);
+
+            //Handle Update
+            _transactionRepository.UpdateTransactionAsync(updatedTransaction);
+            await _transactionRepository.SaveTransactionAsync();
         }
     }
 }

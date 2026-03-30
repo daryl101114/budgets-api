@@ -9,5 +9,7 @@ namespace budget_api.Services.Interface
         Task CreateTransactionAsync(TransactionCreationDto transactionCreationDto);
         Task<IEnumerable<TransactionCategory>> GetTransactionCategoriesAsync();
         Task<IEnumerable<TransactionsDto>> GetTransactionsAsync(Guid walletId);
+        Task<Transaction?> GetTransactionByIdAsync(Guid transactionId);
+        Task UpdateTransactionAsync(Transaction transaction, TransactionUpdateDto transactionUpdateDto);
     }
 }

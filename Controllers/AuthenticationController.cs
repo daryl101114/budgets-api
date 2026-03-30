@@ -2,6 +2,7 @@
 using budget_api.Services.Interface;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 
 namespace budget_api.Controllers
 {
@@ -21,17 +22,26 @@ namespace budget_api.Controllers
         }
 
         [HttpPost("authenticate")]
-        public async Task<ActionResult<String>> Authenticate(AuthenticationRequestBodyDto authenticationRequestBody)
+        public async Task<ActionResult> Authenticate(AuthenticationRequestBodyDto authenticationRequestBody)
         {
             try
             {
                 // Authenticate User
-                var token = await _authenticationService.AuthenticateAsync(authenticationRequestBody);
+               var token = await _authenticationService.AuthenticateAsync(authenticationRequestBody);
                 if (token == null)
                 {
                     return Unauthorized();
                 }
-                return Ok(token);
+                // Set a cookie with name "MyCookie" and value "HelloWorld"
+                Response.Cookies.Append("app.at", token.Value!, new CookieOptions
+                {
+                    Expires = DateTimeOffset.UtcNow.AddHours(1), // Optional: cookie expires in 1 day
+                    HttpOnly = false, // Optional: prevents client-side script access
+                    Secure = false,   // Optional: cookie only sent over HTTPS
+                    SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax,
+                    Domain = "localhost"
+                });
+                return Ok();
             }
             catch (Exception ex)
             {
