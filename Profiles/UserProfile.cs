@@ -7,7 +7,8 @@ namespace budget_api.Profiles
     {
         public UserProfile() 
         {
-            CreateMap<User, UserCreationDto>().ReverseMap();
+            CreateMap<UserCreationDto, User>()
+                .ForMember(dest => dest.PasswordHash, opt => opt.MapFrom(src => src.Password));
             CreateMap<User, UserDto>();
             CreateMap<UserDto, User>();
             CreateMap<User, UserWalletsDto>().ReverseMap();

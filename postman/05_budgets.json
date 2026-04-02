@@ -1,0 +1,490 @@
+{
+  "name": "Budgets",
+  "item": [
+    {
+      "name": "Create Budget",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"April 2026\",\n  \"totalIncome\": 5000.00,\n  \"startDate\": \"2026-04-01\",\n  \"endDate\": \"2026-04-30\",\n  \"isActive\": true\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Budget has expected fields', () => {",
+              "    pm.expect(body).to.have.property('id');",
+              "    pm.expect(body).to.have.property('name');",
+              "    pm.expect(body).to.have.property('totalIncome');",
+              "    pm.expect(body).to.have.property('isActive');",
+              "    pm.expect(body).to.have.property('allocations');",
+              "});",
+              "pm.test('IsActive is true', () => pm.expect(body.isActive).to.be.true);",
+              "pm.test('Allocations is empty array', () => pm.expect(body.allocations).to.deep.equal([]));",
+              "",
+              "pm.collectionVariables.set('budgetId', body.id);",
+              "console.log('budgetId stored:', body.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get All Budgets",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Returns an array', () => pm.expect(body).to.be.an('array'));",
+              "pm.test('At least one budget exists', () => pm.expect(body.length).to.be.greaterThan(0));",
+              "pm.test('Budgets ordered by startDate descending', () => {",
+              "    if (body.length > 1) {",
+              "        pm.expect(new Date(body[0].startDate) >= new Date(body[1].startDate)).to.be.true;",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Active Budget",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets/active"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Returned budget is active', () => pm.expect(body.isActive).to.be.true);",
+              "pm.test('Allocations array present', () => pm.expect(body.allocations).to.be.an('array'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Budget by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets/{{budgetId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Returns correct budget', () => {",
+              "    pm.expect(body.id).to.equal(pm.collectionVariables.get('budgetId'));",
+              "});",
+              "pm.test('Allocations included', () => pm.expect(body.allocations).to.be.an('array'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Budget",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets/{{budgetId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"April 2026 (Revised)\",\n  \"totalIncome\": 6000.00\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Add Allocation \u2014 Housing 40%",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets/{{budgetId}}/allocations",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"bucketId\": \"00000000-0000-0000-0000-000000000001\",\n  \"percentage\": 40.00\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Add Allocation \u2014 Food 30%",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets/{{budgetId}}/allocations",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"bucketId\": \"00000000-0000-0000-0000-000000000001\",\n  \"percentage\": 30.00\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Add Allocation \u2014 Exceeds 100% (expect 400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets/{{budgetId}}/allocations",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"bucketId\": \"00000000-0000-0000-0000-000000000001\",\n  \"percentage\": 40.00\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Over-allocation returns 400', () => pm.response.to.have.status(400));",
+              "pm.test('Error message mentions percentage', () => {",
+              "    pm.expect(pm.response.text()).to.include('%');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Allocations (store first ID)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets/{{budgetId}}/allocations"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Two allocations exist', () => pm.expect(body.length).to.equal(2));",
+              "pm.test('AllocatedAmount is computed correctly', () => {",
+              "    body.forEach(a => {",
+              "        const expected = parseFloat((a.percentage / 100 * 6000).toFixed(2));",
+              "        pm.expect(a.allocatedAmount).to.equal(expected);",
+              "    });",
+              "});",
+              "",
+              "if (body.length > 0) {",
+              "    pm.collectionVariables.set('allocationId', body[0].id);",
+              "    console.log('allocationId stored:', body[0].id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Allocation",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets/{{budgetId}}/allocations/{{allocationId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"percentage\": 35.00\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Remove Allocation",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets/{{budgetId}}/allocations/{{allocationId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create Second Budget (inactive)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"May 2026\",\n  \"totalIncome\": 5500.00,\n  \"startDate\": \"2026-05-01\",\n  \"endDate\": \"2026-05-31\",\n  \"isActive\": false\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('IsActive is false', () => pm.expect(body.isActive).to.be.false);",
+              "pm.collectionVariables.set('budgetId2', body.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Activate Second Budget",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets/{{budgetId2}}/activate"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verify Only One Active Budget",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "const activeBudgets = body.filter(b => b.isActive);",
+              "pm.test('Exactly one active budget', () => pm.expect(activeBudgets.length).to.equal(1));",
+              "pm.test('May 2026 is the active budget', () => {",
+              "    pm.expect(activeBudgets[0].id).to.equal(pm.collectionVariables.get('budgetId2'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete Budget",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets/{{budgetId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Deleted Budget (expect 404)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/budgets/{{budgetId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Soft-deleted budget returns 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,4 @@
-﻿using budget_api.Models.DTOs;
-using budget_api.Models.Entities;
+using budget_api.Models.DTOs;
 using budget_api.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,81 +7,117 @@ namespace budget_api.Controllers
 {
     [ApiController]
     [Authorize]
-    [Route("api/[Controller]")]
+    [Route("api/transactions")]
     public class TransactionController : ControllerBase
     {
         private readonly ILogger<TransactionController> _logger;
         private readonly ITransactionService _transactionService;
-        public TransactionController(ILogger<TransactionController> logger, ITransactionService transactionService) 
+
+        public TransactionController(ILogger<TransactionController> logger, ITransactionService transactionService)
         {
             _logger = logger;
             _transactionService = transactionService;
         }
-        [HttpPost("createTransaction")]
-        public async Task<IActionResult> CreateTransaction([FromBody]TransactionCreationDto transactionCreationDto)
+
+        [HttpPost]
+        public async Task<IActionResult> CreateTransaction([FromBody] CreateTransactionDto createTransactionDto)
         {
             try
             {
-                await _transactionService.CreateTransactionAsync(transactionCreationDto);
-                return Ok("Transaction created");
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
+                if (userId == null) return Unauthorized();
+
+                await _transactionService.CreateTransactionAsync(createTransactionDto, new Guid(userId));
+                return StatusCode(201, "Transaction created.");
             }
             catch (Exception ex)
             {
-                _logger.LogError("At Create Transaction", ex);
-                return StatusCode(500, "Failed to create transaction");
-            }
-
-        }
-
-        [HttpGet("TransactionCategories")]
-        public async Task<IActionResult> GetTransactionCategories()
-        {
-            try
-            {
-                return Ok(await _transactionService.GetTransactionCategoriesAsync());
-            }
-            catch(Exception ex)
-            {
-                _logger.LogError("At Get Transaction Categories", ex);
-                return StatusCode(500, "Failed to get Transaction Categories");
+                _logger.LogError(ex, "Failed to create transaction");
+                return StatusCode(500, "Failed to create transaction.");
             }
         }
-        [HttpGet("transactions/{walletId}")]
+
+        [HttpGet("wallet/{walletId}")]
         public async Task<IActionResult> GetWalletTransactions(Guid walletId)
         {
             try
             {
-                var transactions = await _transactionService.GetTransactionsAsync(walletId);
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
+                if (userId == null) return Unauthorized();
+
+                var transactions = await _transactionService.GetTransactionsByWalletAsync(walletId, new Guid(userId));
                 return Ok(transactions);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to retreive transactions for {walletId}", ex);
-                return StatusCode(500, "Failed to get Transactions");
+                _logger.LogError(ex, "Failed to retrieve transactions for wallet {WalletId}", walletId);
+                return StatusCode(500, "Failed to get transactions.");
             }
         }
 
-        [HttpPut("EditTransaction")]
-        public async Task<IActionResult> UpdateTransaction(TransactionUpdateDto transactionUpdateDto)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetTransaction(Guid id)
         {
             try
             {
-                //Find if transaction record exist in DB
-                var existingTransaction = await _transactionService.GetTransactionByIdAsync(transactionUpdateDto.Id);
-                //Handle no record found
-                if (existingTransaction == null)
-                {
-                    return StatusCode(404, "No Transaction found");
-                }
-                //Handle Update
-                await _transactionService.UpdateTransactionAsync(existingTransaction, transactionUpdateDto);
-                return StatusCode(200, "Updated Record!");
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
+                if (userId == null) return Unauthorized();
+
+                var transaction = await _transactionService.GetTransactionByIdAsync(id, new Guid(userId));
+                if (transaction == null) return NotFound();
+
+                return Ok(transaction);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                _logger.LogError($"Failed to retreive transactions for {transactionUpdateDto.Id}", ex);
-                return StatusCode(500, "Something went wrong while updating a transaction");
+                _logger.LogError(ex, "Failed to retrieve transaction {TransactionId}", id);
+                return StatusCode(500, "Failed to get transaction.");
             }
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateTransaction(Guid id, UpdateTransactionDto updateTransactionDto)
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
+                if (userId == null) return Unauthorized();
+
+                await _transactionService.UpdateTransactionAsync(id, new Guid(userId), updateTransactionDto);
+                return NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update transaction {TransactionId}", id);
+                return StatusCode(500, "Failed to update transaction.");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTransaction(Guid id)
+        {
+            try
+            {
+                var userId = User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
+                if (userId == null) return Unauthorized();
+
+                await _transactionService.DeleteTransactionAsync(id, new Guid(userId));
+                return NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete transaction {TransactionId}", id);
+                return StatusCode(500, "Failed to delete transaction.");
+            }
+        }
+
     }
 }

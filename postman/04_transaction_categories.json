@@ -1,0 +1,325 @@
+{
+  "name": "Transaction Categories",
+  "item": [
+    {
+      "name": "Get All Categories",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transaction-categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Returns an array', () => pm.expect(body).to.be.an('array'));",
+              "pm.test('At least 24 system categories seeded', () => {",
+              "    pm.expect(body.length).to.be.at.least(24);",
+              "});",
+              "",
+              "// Store a system category (userId == null) for the 403 test",
+              "const systemCat = body.find(c => c.userId === null);",
+              "if (systemCat) {",
+              "    pm.collectionVariables.set('systemCategoryId', systemCat.id);",
+              "}",
+              "",
+              "pm.test('Category has expected fields', () => {",
+              "    const c = body[0];",
+              "    pm.expect(c).to.have.property('id');",
+              "    pm.expect(c).to.have.property('categoryName');",
+              "    pm.expect(c).to.have.property('isFixed');",
+              "    pm.expect(c).to.have.property('bucketId');",
+              "    pm.expect(c).to.have.property('createdAt');",
+              "});",
+              "",
+              "pm.test('System categories have null userId', () => {",
+              "    const systemCats = body.filter(c => c.userId === null);",
+              "    pm.expect(systemCats.length).to.be.at.least(24);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create Custom Category",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transaction-categories",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"bucketId\": \"00000000-0000-0000-0000-000000000001\",\n  \"categoryName\": \"Pet Expenses\",\n  \"isFixed\": false,\n  \"icon\": \"paw\",\n  \"color\": \"orange-400\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "pm.test('Response confirms category created', () => {",
+              "    pm.expect(pm.response.text()).to.include('created');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Categories (store custom ID)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transaction-categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "// Store the user-owned custom category ID",
+              "const body = pm.response.json();",
+              "const custom = body.find(c => c.userId !== null && c.categoryName === 'Pet Expenses');",
+              "if (custom) {",
+              "    pm.collectionVariables.set('categoryId', custom.id);",
+              "    console.log('categoryId stored:', custom.id);",
+              "}",
+              "",
+              "pm.test('Custom category is present in list', () => {",
+              "    pm.expect(custom).to.not.be.undefined;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Category by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transaction-categories/{{categoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Returns correct category', () => {",
+              "    pm.expect(body.id).to.equal(pm.collectionVariables.get('categoryId'));",
+              "});",
+              "pm.test('Category name is correct', () => {",
+              "    pm.expect(body.categoryName).to.equal('Pet Expenses');",
+              "});",
+              "pm.test('UserId is set (user-owned)', () => {",
+              "    pm.expect(body.userId).to.not.be.null;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Custom Category",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transaction-categories/{{categoryId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"categoryName\": \"Pet Care\",\n  \"color\": \"amber-500\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verify Update Applied",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transaction-categories/{{categoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Name was updated', () => pm.expect(body.categoryName).to.equal('Pet Care'));",
+              "pm.test('Color was updated', () => pm.expect(body.color).to.equal('amber-500'));",
+              "pm.test('BucketId was preserved', () => {",
+              "    pm.expect(body.bucketId).to.equal('00000000-0000-0000-0000-000000000001');",
+              "});",
+              "pm.test('IsFixed was preserved', () => pm.expect(body.isFixed).to.equal(false));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update System Category (expect 403)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transaction-categories/{{systemCategoryId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"categoryName\": \"Hacked\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Cannot modify system category \u2014 returns 403', () => {",
+              "    pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete System Category (expect 403)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transaction-categories/{{systemCategoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Cannot delete system category \u2014 returns 403', () => {",
+              "    pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete Custom Category",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transaction-categories/{{categoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Deleted Category (expect 404)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transaction-categories/{{categoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Soft-deleted category returns 404', () => {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

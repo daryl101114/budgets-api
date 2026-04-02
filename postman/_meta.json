@@ -1,0 +1,61 @@
+{
+  "info": {
+    "name": "Budget API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Complete collection for the Budget API. Run Auth/Authenticate first \u2014 it auto-populates the token and subsequent IDs via test scripts."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5038"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "walletId",
+      "value": ""
+    },
+    {
+      "key": "transactionId",
+      "value": ""
+    },
+    {
+      "key": "categoryId",
+      "value": ""
+    },
+    {
+      "key": "systemCategoryId",
+      "value": ""
+    },
+    {
+      "key": "budgetId",
+      "value": ""
+    },
+    {
+      "key": "budgetId2",
+      "value": ""
+    },
+    {
+      "key": "allocationId",
+      "value": ""
+    },
+    {
+      "key": "importBatchId",
+      "value": ""
+    },
+    {
+      "key": "importBatchId2",
+      "value": ""
+    },
+    {
+      "key": "approveIds",
+      "value": "[]"
+    },
+    {
+      "key": "rejectIds",
+      "value": "[]"
+    }
+  ]
+}

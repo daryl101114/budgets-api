@@ -1,0 +1,199 @@
+{
+  "name": "Transactions",
+  "item": [
+    {
+      "name": "Create Transaction",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transactions",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"walletId\": \"{{walletId}}\",\n  \"amount\": 85.50,\n  \"transactionType\": \"Expense\",\n  \"date\": \"2026-04-01\",\n  \"description\": \"Grocery run\",\n  \"isRecurring\": false\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "pm.test('Response confirms transaction created', () => {",
+              "    pm.expect(pm.response.text()).to.include('created');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Transactions by Wallet",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transactions/wallet/{{walletId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Response is an array', () => pm.expect(body).to.be.an('array'));",
+              "pm.test('At least one transaction returned', () => pm.expect(body.length).to.be.greaterThan(0));",
+              "",
+              "// Store first transaction ID",
+              "if (body.length > 0) {",
+              "    pm.collectionVariables.set('transactionId', body[0].id);",
+              "    console.log('transactionId stored:', body[0].id);",
+              "}",
+              "",
+              "pm.test('Transaction has expected fields', () => {",
+              "    const t = body[0];",
+              "    pm.expect(t).to.have.property('id');",
+              "    pm.expect(t).to.have.property('amount');",
+              "    pm.expect(t).to.have.property('transactionType');",
+              "    pm.expect(t).to.have.property('date');",
+              "    pm.expect(t).to.have.property('source');",
+              "});",
+              "",
+              "pm.test('Source defaults to Manual', () => {",
+              "    pm.expect(body[0].source).to.equal('Manual');",
+              "});",
+              "",
+              "pm.test('Transactions ordered by date descending', () => {",
+              "    if (body.length > 1) {",
+              "        pm.expect(new Date(body[0].date) >= new Date(body[1].date)).to.be.true;",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Transaction by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transactions/{{transactionId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Returns correct transaction', () => {",
+              "    pm.expect(body.id).to.equal(pm.collectionVariables.get('transactionId'));",
+              "});",
+              "",
+              "pm.test('Amount is a number', () => pm.expect(body.amount).to.be.a('number'));",
+              "pm.test('Date is present', () => pm.expect(body.date).to.be.a('string'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Transaction",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transactions/{{transactionId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"Grocery run - Whole Foods\",\n  \"amount\": 92.75\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete Transaction",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transactions/{{transactionId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Deleted Transaction (expect 404)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/transactions/{{transactionId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Soft-deleted transaction returns 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

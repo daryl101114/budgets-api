@@ -1,8 +1,4 @@
-﻿using budget_api.Models.Entities;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace budget_api.Models.DTOs
+﻿namespace budget_api.Models.DTOs
 {
     public class UserDto
     {
@@ -13,13 +9,14 @@ namespace budget_api.Models.DTOs
         public DateTime? UpdatedAt { get; set; }
         public string Currency { get; set; } = "USD";
     }
+
     public class UserWalletsDto
     {
         public Guid Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Email { get; set; }
-        public ICollection<WalletsDto> Wallets { get; set; } = new List<WalletsDto>();
+        public ICollection<WalletDto> Wallets { get; set; } = new List<WalletDto>();
         public string Currency { get; set; } = "USD";
     }
 }

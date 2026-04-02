@@ -1,0 +1,509 @@
+{
+  "name": "Import",
+  "item": [
+    {
+      "name": "Upload CSV",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/wallets/{{walletId}}",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": [],
+              "description": "Select a CSV file with columns: Date, Amount, Type (Income/Expense), Description, RawDescription, BankTxnType"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Batch has expected fields', () => {",
+              "    pm.expect(body).to.have.property('id');",
+              "    pm.expect(body).to.have.property('walletId');",
+              "    pm.expect(body).to.have.property('fileName');",
+              "    pm.expect(body).to.have.property('status');",
+              "    pm.expect(body).to.have.property('totalRows');",
+              "    pm.expect(body).to.have.property('duplicateCount');",
+              "});",
+              "pm.test('Status is Reviewing', () => pm.expect(body.status).to.equal('Reviewing'));",
+              "",
+              "pm.collectionVariables.set('importBatchId', body.id);",
+              "console.log('importBatchId stored:', body.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get All Batches",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Returns an array', () => pm.expect(body).to.be.an('array'));",
+              "pm.test('At least one batch exists', () => pm.expect(body.length).to.be.greaterThan(0));",
+              "pm.test('Batches ordered newest first', () => {",
+              "    if (body.length > 1) {",
+              "        pm.expect(new Date(body[0].createdAt) >= new Date(body[1].createdAt)).to.be.true;",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Batch Detail",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/{{importBatchId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Has transactions array', () => pm.expect(body.transactions).to.be.an('array'));",
+              "pm.test('Has pendingDuplicates field', () => pm.expect(body).to.have.property('pendingDuplicates'));",
+              "pm.test('Has readyToConfirm field', () => pm.expect(body).to.have.property('readyToConfirm'));",
+              "pm.test('Each transaction has importStatus', () => {",
+              "    body.transactions.forEach(t => {",
+              "        pm.expect(t).to.have.property('importStatus');",
+              "        pm.expect(t).to.have.property('isDuplicate');",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Confirm Batch",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/{{importBatchId}}/confirm"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Batch After Confirm (expect Confirmed)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/{{importBatchId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Batch status is Confirmed', () => pm.expect(body.status).to.equal('Confirmed'));",
+              "pm.test('confirmedAt is set', () => pm.expect(body.confirmedAt).to.not.be.null);",
+              "pm.test('importedCount > 0', () => pm.expect(body.importedCount).to.be.greaterThan(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Upload CSV Again (duplicate detection)",
+      "description": "Upload the same CSV a second time \u2014 all rows should be flagged as duplicates.",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/wallets/{{walletId}}",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": [],
+              "description": "Select the same CSV file as the first upload"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('All rows flagged as duplicates', () => {",
+              "    pm.expect(body.duplicateCount).to.equal(body.totalRows);",
+              "});",
+              "pm.test('Status is Reviewing', () => pm.expect(body.status).to.equal('Reviewing'));",
+              "",
+              "pm.collectionVariables.set('importBatchId2', body.id);",
+              "console.log('importBatchId2 stored:', body.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Duplicate Batch Detail (store IDs for approve/reject)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/{{importBatchId2}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "const dups = body.transactions.filter(t => t.isDuplicate);",
+              "",
+              "pm.test('All transactions are duplicates', () => {",
+              "    pm.expect(dups.length).to.equal(body.totalRows);",
+              "});",
+              "pm.test('pendingDuplicates equals totalRows', () => {",
+              "    pm.expect(body.pendingDuplicates).to.equal(body.totalRows);",
+              "});",
+              "pm.test('readyToConfirm is false', () => pm.expect(body.readyToConfirm).to.be.false);",
+              "",
+              "// Store first 2 for approve, rest for reject",
+              "const approveIds = dups.slice(0, 2).map(t => t.id);",
+              "const rejectIds  = dups.slice(2).map(t => t.id);",
+              "pm.collectionVariables.set('approveIds', JSON.stringify(approveIds));",
+              "pm.collectionVariables.set('rejectIds',  JSON.stringify(rejectIds));",
+              "console.log('approveIds:', approveIds);",
+              "console.log('rejectIds:', rejectIds);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Batch Approve Duplicates",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/{{importBatchId2}}/transactions/approve",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"transactionIds\": {{approveIds}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Batch Reject Duplicates",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/{{importBatchId2}}/transactions/reject",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"transactionIds\": {{rejectIds}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Batch After Review (expect readyToConfirm)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/{{importBatchId2}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('pendingDuplicates is 0', () => pm.expect(body.pendingDuplicates).to.equal(0));",
+              "pm.test('readyToConfirm is true', () => pm.expect(body.readyToConfirm).to.be.true);",
+              "",
+              "const approved = body.transactions.filter(t => t.importStatus === 'Confirmed');",
+              "const rejected = body.transactions.filter(t => t.importStatus === 'Rejected');",
+              "pm.test('2 transactions approved', () => pm.expect(approved.length).to.equal(2));",
+              "pm.test('Remaining transactions rejected', () => pm.expect(rejected.length).to.be.greaterThan(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Confirm Batch 2 (mixed approve/reject)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/{{importBatchId2}}/confirm"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verify Batch 2 Counts After Confirm",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/{{importBatchId2}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Status is Confirmed', () => pm.expect(body.status).to.equal('Confirmed'));",
+              "pm.test('importedCount is 2', () => pm.expect(body.importedCount).to.equal(2));",
+              "pm.test('skippedCount > 0', () => pm.expect(body.skippedCount).to.be.greaterThan(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rollback Batch 2",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/{{importBatchId2}}/rollback"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verify Batch 2 RolledBack",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/{{importBatchId2}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Status is RolledBack', () => pm.expect(body.status).to.equal('RolledBack'));",
+              "pm.test('rolledBackAt is set', () => pm.expect(body.rolledBackAt).to.not.be.null);",
+              "pm.test('No transactions visible', () => pm.expect(body.transactions.length).to.equal(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rollback Already-Rolled-Back Batch (expect 400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/{{importBatchId2}}/rollback"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Cannot rollback twice \u2014 returns 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Upload Non-CSV File (expect 400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/import/wallets/{{walletId}}",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": [],
+              "description": "Select any non-CSV file (e.g. a .txt or .json file)"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Non-CSV upload returns 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

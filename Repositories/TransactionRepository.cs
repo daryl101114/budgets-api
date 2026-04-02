@@ -1,14 +1,16 @@
-﻿using budget_api.DbConext;
+using budget_api.DbConext;
 using budget_api.Models.Entities;
 using budget_api.Repositories.Interface;
 using Microsoft.EntityFrameworkCore;
 
 namespace budget_api.Repositories
 {
-    public class TransactionRepository: ITransactionRepository
+    public class TransactionRepository : ITransactionRepository
     {
         private readonly BudgetsDbContext _context;
-        public TransactionRepository(BudgetsDbContext dbContext) {
+
+        public TransactionRepository(BudgetsDbContext dbContext)
+        {
             _context = dbContext;
         }
 
@@ -17,34 +19,36 @@ namespace budget_api.Repositories
             await _context.Transactions.AddAsync(transaction);
         }
 
-        public async Task<Transaction?> GetTransactionByIdAsync(Guid transactionId)
-        {
-           return await _context.Transactions.Where(t => t.Id == transactionId).FirstOrDefaultAsync();
-        }
-
-        public async Task<IEnumerable<TransactionCategory>> GetTransactionCategoriesAsync()
-        {
-            return await _context.TransactionCategory.ToListAsync();
-        }
-
-        public async Task<IEnumerable<Transaction>> GetTransactionsAsync(Guid walletId)
+        public async Task<IEnumerable<Transaction>> GetTransactionsByWalletAsync(Guid walletId, Guid userId)
         {
             return await _context.Transactions
-                .Include(t => t.Wallet)
-                .Include(t => t.TransactionCategory)
-                .Where(t => t.WalletId == walletId)
+                .Include(t => t.Subcategory)
+                .Where(t => t.WalletId == walletId && t.UserId == userId && t.DeletedAt == null)
+                .OrderByDescending(t => t.Date)
                 .ToListAsync();
         }
 
-        public async Task<bool> SaveTransactionAsync()
+        public async Task<Transaction?> GetTransactionByIdAsync(Guid transactionId, Guid userId)
         {
-            //Save entity when 0 or more entities have been saved
-            return (await _context.SaveChangesAsync() >= 0);
+            return await _context.Transactions
+                .FirstOrDefaultAsync(t => t.Id == transactionId && t.UserId == userId && t.DeletedAt == null);
         }
 
-        public void UpdateTransactionAsync(Transaction transaction)
+        public Task UpdateTransactionAsync(Transaction transaction)
         {
-            _context.Update(transaction);
+            transaction.UpdatedAt = DateTime.UtcNow;
+            return Task.CompletedTask;
+        }
+
+        public Task SoftDeleteAsync(Transaction transaction)
+        {
+            transaction.DeletedAt = DateTime.UtcNow;
+            return Task.CompletedTask;
+        }
+
+        public async Task<bool> SaveChangesAsync()
+        {
+            return (await _context.SaveChangesAsync() >= 0);
         }
     }
 }

@@ -1,15 +1,13 @@
-﻿using budget_api.Models.DTOs;
-using budget_api.Models.Entities;
-using Microsoft.AspNetCore.Mvc;
+using budget_api.Models.DTOs;
 
 namespace budget_api.Services.Interface
 {
     public interface ITransactionService
     {
-        Task CreateTransactionAsync(TransactionCreationDto transactionCreationDto);
-        Task<IEnumerable<TransactionCategory>> GetTransactionCategoriesAsync();
-        Task<IEnumerable<TransactionsDto>> GetTransactionsAsync(Guid walletId);
-        Task<Transaction?> GetTransactionByIdAsync(Guid transactionId);
-        Task UpdateTransactionAsync(Transaction transaction, TransactionUpdateDto transactionUpdateDto);
+        Task CreateTransactionAsync(CreateTransactionDto createTransactionDto, Guid userId);
+        Task<IEnumerable<TransactionDto>> GetTransactionsByWalletAsync(Guid walletId, Guid userId);
+        Task<TransactionDto?> GetTransactionByIdAsync(Guid transactionId, Guid userId);
+        Task UpdateTransactionAsync(Guid transactionId, Guid userId, UpdateTransactionDto updateTransactionDto);
+        Task DeleteTransactionAsync(Guid transactionId, Guid userId);
     }
 }

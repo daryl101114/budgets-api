@@ -70,6 +70,8 @@ namespace budget_api.Services
 
         public async Task<ActionResult<User>> RegisterAsync(UserCreationDto user)
         {
+            //Check if user is already Registered
+
             //Create new User 
             User mappedUser = _mapper.Map<User>(user);
 

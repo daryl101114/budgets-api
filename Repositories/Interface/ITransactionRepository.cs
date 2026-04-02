@@ -1,14 +1,14 @@
-﻿using budget_api.Models.Entities;
+using budget_api.Models.Entities;
 
 namespace budget_api.Repositories.Interface
 {
     public interface ITransactionRepository
     {
         Task CreateTransactionAsync(Transaction transaction);
-        Task<IEnumerable<TransactionCategory>> GetTransactionCategoriesAsync();
-        Task<bool> SaveTransactionAsync();
-        Task<IEnumerable<Transaction>> GetTransactionsAsync(Guid walletId);
-        Task<Transaction?> GetTransactionByIdAsync(Guid transactionId);
-        void UpdateTransactionAsync(Transaction transaction);
+        Task<IEnumerable<Transaction>> GetTransactionsByWalletAsync(Guid walletId, Guid userId);
+        Task<Transaction?> GetTransactionByIdAsync(Guid transactionId, Guid userId);
+        Task UpdateTransactionAsync(Transaction transaction);
+        Task SoftDeleteAsync(Transaction transaction);
+        Task<bool> SaveChangesAsync();
     }
 }
