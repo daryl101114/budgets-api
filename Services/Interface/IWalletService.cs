@@ -1,12 +1,12 @@
-﻿using budget_api.Models.DTOs;
-using budget_api.Models.Entities;
-using Microsoft.AspNetCore.Mvc;
+using budget_api.Models.DTOs;
 
 namespace budget_api.Services.Interface
 {
     public interface IWalletService
     {
-        Task CreateWallet(WalletCreationDto walletCreationDto, Guid userId);
+        Task CreateWalletAsync(CreateWalletDto createWalletDto, Guid userId);
         Task<UserWalletsDto?> GetUserWalletsAsync(Guid userId);
+        Task UpdateWalletAsync(Guid walletId, Guid userId, UpdateWalletDto updateWalletDto);
+        Task DeleteWalletAsync(Guid walletId, Guid userId);
     }
 }

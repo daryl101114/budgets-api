@@ -1,0 +1,141 @@
+{
+  "name": "Wallets",
+  "item": [
+    {
+      "name": "Create Wallet",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/wallets",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"walletName\": \"My Checking\",\n  \"walletType\": \"Checking\",\n  \"currency\": \"USD\",\n  \"balance\": 2500.00,\n  \"institution\": \"Chase\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "pm.test('Response confirms wallet created', () => {",
+              "    pm.expect(pm.response.text()).to.include('created');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Wallets",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/wallets"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test('Response has user fields', () => {",
+              "    pm.expect(body).to.have.property('id');",
+              "    pm.expect(body).to.have.property('email');",
+              "    pm.expect(body).to.have.property('wallets');",
+              "});",
+              "",
+              "pm.test('Wallets is an array', () => {",
+              "    pm.expect(body.wallets).to.be.an('array');",
+              "});",
+              "",
+              "// Store first wallet ID for subsequent requests",
+              "if (body.wallets && body.wallets.length > 0) {",
+              "    pm.collectionVariables.set('walletId', body.wallets[0].id);",
+              "    console.log('walletId stored:', body.wallets[0].id);",
+              "}",
+              "",
+              "pm.test('Wallet has expected fields', () => {",
+              "    const w = body.wallets[0];",
+              "    pm.expect(w).to.have.property('walletName');",
+              "    pm.expect(w).to.have.property('walletType');",
+              "    pm.expect(w).to.have.property('balance');",
+              "    pm.expect(w).to.have.property('currency');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Wallet",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/wallets/{{walletId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"walletName\": \"My Checking (Updated)\",\n  \"institution\": \"Chase Bank\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete Wallet",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/wallets/{{walletId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

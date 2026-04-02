@@ -1,9 +1,9 @@
-﻿using AutoMapper;
+using AutoMapper;
 using budget_api.Models.DTOs;
 using budget_api.Models.Entities;
+using budget_api.Models.Enums;
 using budget_api.Repositories.Interface;
 using budget_api.Services.Interface;
-using Microsoft.AspNetCore.Mvc;
 
 namespace budget_api.Services
 {
@@ -11,51 +11,52 @@ namespace budget_api.Services
     {
         private readonly ITransactionRepository _transactionRepository;
         private readonly IMapper _mapper;
-        public TransactionService(ITransactionRepository transactionRepository, IMapper mapper) {
+
+        public TransactionService(ITransactionRepository transactionRepository, IMapper mapper)
+        {
             _transactionRepository = transactionRepository;
             _mapper = mapper;
         }
 
-        public async Task CreateTransactionAsync(TransactionCreationDto transactionCreationDto)
+        public async Task CreateTransactionAsync(CreateTransactionDto createTransactionDto, Guid userId)
         {
-            //Map Values
-            var transaction = _mapper.Map<Transaction>(transactionCreationDto);
+            var transaction = _mapper.Map<Transaction>(createTransactionDto);
+            transaction.UserId = userId;
+            transaction.Source = TransactionSource.Manual;
+            transaction.UpdatedAt = DateTime.UtcNow;
             await _transactionRepository.CreateTransactionAsync(transaction);
-            await _transactionRepository.SaveTransactionAsync();
+            await _transactionRepository.SaveChangesAsync();
         }
 
-        public async Task<IEnumerable<TransactionCategory>> GetTransactionCategoriesAsync()
+        public async Task<IEnumerable<TransactionDto>> GetTransactionsByWalletAsync(Guid walletId, Guid userId)
         {
-            return await _transactionRepository.GetTransactionCategoriesAsync();
+            var transactions = await _transactionRepository.GetTransactionsByWalletAsync(walletId, userId);
+            return _mapper.Map<IEnumerable<TransactionDto>>(transactions);
         }
 
-        public async Task<IEnumerable<TransactionsDto>> GetTransactionsAsync(Guid walletId)
+        public async Task<TransactionDto?> GetTransactionByIdAsync(Guid transactionId, Guid userId)
         {
-            var transactionsList = await _transactionRepository.GetTransactionsAsync(walletId);
-            var mappedTransactions = new List<TransactionsDto>();
-            //Loop and map
-            foreach (var item in transactionsList)
-            {
-                var mapped = _mapper.Map<TransactionsDto>(item);
-                mappedTransactions.Add(mapped);
-            }
-            return mappedTransactions;
+            var transaction = await _transactionRepository.GetTransactionByIdAsync(transactionId, userId);
+            return transaction == null ? null : _mapper.Map<TransactionDto>(transaction);
         }
 
-        public async Task<Transaction?> GetTransactionByIdAsync(Guid transactionId)
+        public async Task UpdateTransactionAsync(Guid transactionId, Guid userId, UpdateTransactionDto updateTransactionDto)
         {
-            var transaction = await _transactionRepository.GetTransactionByIdAsync(transactionId);
-            return transaction;
+            var transaction = await _transactionRepository.GetTransactionByIdAsync(transactionId, userId)
+                ?? throw new KeyNotFoundException($"Transaction {transactionId} not found.");
+
+            _mapper.Map(updateTransactionDto, transaction);
+            await _transactionRepository.UpdateTransactionAsync(transaction);
+            await _transactionRepository.SaveChangesAsync();
         }
 
-        public async Task UpdateTransactionAsync(Transaction transaction, TransactionUpdateDto transactionUpdateDto)
+        public async Task DeleteTransactionAsync(Guid transactionId, Guid userId)
         {
-            //Map transactionUpdateDto values -> transaction
-            var updatedTransaction = _mapper.Map(transactionUpdateDto, transaction);
+            var transaction = await _transactionRepository.GetTransactionByIdAsync(transactionId, userId)
+                ?? throw new KeyNotFoundException($"Transaction {transactionId} not found.");
 
-            //Handle Update
-            _transactionRepository.UpdateTransactionAsync(updatedTransaction);
-            await _transactionRepository.SaveTransactionAsync();
+            await _transactionRepository.SoftDeleteAsync(transaction);
+            await _transactionRepository.SaveChangesAsync();
         }
     }
 }

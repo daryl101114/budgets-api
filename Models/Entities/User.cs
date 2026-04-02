@@ -24,6 +24,6 @@ namespace budget_api.Models.Entities
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public DateTime? DeletedAt { get; set; }
-        public ICollection<Wallets> Wallets { get; set; } = new List<Wallets>();
+        public ICollection<Wallet> Wallets { get; set; } = new List<Wallet>();
     }
 }
