@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budgify API — Implementation Specification</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      line-height: 1.65;
+      color: #1a1a2e;
+      background: #fff;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 48px 80px;
+    }
+
+    /* Cover page */
+    .cover {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      page-break-after: always;
+    }
+    .cover .logo {
+      font-size: 64px;
+      margin-bottom: 24px;
+    }
+    .cover h1 {
+      font-size: 40px;
+      font-weight: 800;
+      color: #0f3460;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+    .cover .subtitle {
+      font-size: 18px;
+      color: #666;
+      margin-bottom: 48px;
+    }
+    .cover .meta {
+      background: #f0f4ff;
+      border-radius: 12px;
+      padding: 24px 40px;
+      text-align: left;
+    }
+    .cover .meta p { margin-bottom: 6px; color: #444; }
+    .cover .meta strong { color: #0f3460; }
+    .cover .badge {
+      display: inline-block;
+      margin-top: 32px;
+      background: #16213e;
+      color: #fff;
+      padding: 6px 18px;
+      border-radius: 99px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* TOC */
+    .toc {
+      page-break-after: always;
+      padding-top: 40px;
+    }
+    .toc h2 {
+      font-size: 22px;
+      color: #0f3460;
+      border-bottom: 2px solid #0f3460;
+      padding-bottom: 8px;
+      margin-bottom: 24px;
+    }
+    .toc ol { padding-left: 20px; }
+    .toc li { margin-bottom: 6px; }
+    .toc a { color: #1a73e8; text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .toc .toc-sub { padding-left: 20px; margin-top: 4px; list-style-type: disc; }
+    .toc .toc-sub li { margin-bottom: 3px; font-size: 13px; }
+
+    /* Headings */
+    h1 { font-size: 32px; font-weight: 800; color: #0f3460; margin-bottom: 16px; }
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0f3460;
+      margin-top: 48px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e8edf5;
+    }
+    h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #16213e;
+      margin-top: 32px;
+      margin-bottom: 10px;
+    }
+    h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #444;
+      margin-top: 20px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Content */
+    p { margin-bottom: 12px; }
+    ul, ol { padding-left: 24px; margin-bottom: 12px; }
+    li { margin-bottom: 4px; }
+
+    /* Callout */
+    .callout {
+      background: #fffbe6;
+      border-left: 4px solid #f5a623;
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 13px;
+      color: #5a3e00;
+    }
+    .callout.info {
+      background: #e8f4fd;
+      border-color: #1a73e8;
+      color: #0d47a1;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      font-size: 13px;
+    }
+    th {
+      background: #0f3460;
+      color: #fff;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+    }
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #e8edf5;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #f8f9fd; }
+    tr:hover td { background: #eef2fb; }
+
+    /* Code */
+    code {
+      font-family: 'Consolas', 'Cascadia Code', 'Courier New', monospace;
+      font-size: 12.5px;
+      background: #f3f4f6;
+      border: 1px solid #e2e6ea;
+      border-radius: 4px;
+      padding: 1px 5px;
+      color: #d63384;
+    }
+    pre {
+      background: #1a1a2e;
+      color: #e8eaf6;
+      border-radius: 8px;
+      padding: 18px 20px;
+      overflow-x: auto;
+      margin: 12px 0 20px;
+      font-size: 12.5px;
+      line-height: 1.6;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: inherit;
+      font-size: inherit;
+    }
+
+    /* HTTP method badges */
+    .method {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    .method.get    { background: #d4edda; color: #155724; }
+    .method.post   { background: #cce5ff; color: #004085; }
+    .method.put    { background: #fff3cd; color: #856404; }
+    .method.patch  { background: #e2d9f3; color: #432874; }
+    .method.delete { background: #f8d7da; color: #721c24; }
+
+    .endpoint {
+      display: flex;
+      align-items: center;
+      background: #f3f4f6;
+      border: 1px solid #dde1e7;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin: 10px 0;
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+    }
+    .endpoint .path { color: #1a1a2e; font-weight: 500; }
+
+    /* Section break */
+    .section { margin-top: 60px; }
+
+    /* Status badge */
+    .status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .status.done  { background: #d4edda; color: #155724; }
+    .status.planned { background: #e2d9f3; color: #432874; }
+
+    /* Print */
+    @media print {
+      body { padding: 0; }
+      a { color: inherit; text-decoration: none; }
+      .cover { page-break-after: always; }
+      .toc { page-break-after: always; }
+      h2 { page-break-before: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="logo">💰</div>
+  <h1>Budgify</h1>
+  <p class="subtitle">Personal Budgeting API — Implementation Specification</p>
+  <div class="meta">
+    <p><strong>Framework:</strong> ASP.NET Core 8 Web API</p>
+    <p><strong>Database:</strong> SQL Server (SQLEXPRESS) via EF Core 8</p>
+    <p><strong>Auth:</strong> JWT Bearer (HttpOnly cookie delivery)</p>
+    <p><strong>Version:</strong> Post Phase 2.8 — Import Batch</p>
+    <p><strong>Date:</strong> April 2026</p>
+  </div>
+  <span class="badge">Implementation Reference</span>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#stack">Tech Stack</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#auth">Authentication</a></li>
+    <li><a href="#models">Data Models</a>
+      <ul class="toc-sub">
+        <li><a href="#model-user">User</a></li>
+        <li><a href="#model-wallet">Wallet</a></li>
+        <li><a href="#model-transaction">Transaction</a></li>
+        <li><a href="#model-category">Transaction Category</a></li>
+        <li><a href="#model-bucket">Spending Bucket</a></li>
+        <li><a href="#model-budget">Budget</a></li>
+        <li><a href="#model-allocation">Budget Allocation</a></li>
+        <li><a href="#model-batch">Import Batch</a></li>
+      </ul>
+    </li>
+    <li><a href="#endpoints">API Endpoints</a>
+      <ul class="toc-sub">
+        <li><a href="#ep-auth">Auth</a></li>
+        <li><a href="#ep-wallets">Wallets</a></li>
+        <li><a href="#ep-transactions">Transactions</a></li>
+        <li><a href="#ep-categories">Transaction Categories</a></li>
+        <li><a href="#ep-buckets">Spending Buckets</a></li>
+        <li><a href="#ep-budgets">Budgets</a></li>
+        <li><a href="#ep-allocations">Budget Allocations</a></li>
+        <li><a href="#ep-import">Import Batches</a></li>
+      </ul>
+    </li>
+    <li><a href="#enums">Enums</a></li>
+    <li><a href="#patterns">Design Patterns</a></li>
+    <li><a href="#errors">Error Handling</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+  </ol>
+</div>
+
+<!-- SECTION 1 -->
+<div class="section" id="overview">
+  <h2>1. Overview</h2>
+  <p>Budgify is a personal budgeting REST API that allows users to track income and expenses across multiple wallets, categorize transactions, plan budgets, and import transactions from CSV bank exports.</p>
+  <p><strong>Base URL:</strong> <code>http://localhost:{port}/api</code></p>
+  <div class="callout">
+    The original design doc used versioned URLs (<code>/api/v1/</code>). The implemented API uses unversioned routes (<code>/api/</code>).
+  </div>
+</div>
+
+<!-- SECTION 2 -->
+<div class="section" id="stack">
+  <h2>2. Tech Stack</h2>
+  <table>
+    <tr><th>Layer</th><th>Technology</th></tr>
+    <tr><td>Framework</td><td>ASP.NET Core 8 Web API</td></tr>
+    <tr><td>ORM</td><td>Entity Framework Core 8</td></tr>
+    <tr><td>Database</td><td>SQL Server (SQLEXPRESS)</td></tr>
+    <tr><td>Auth</td><td>JWT Bearer — token delivered as <code>app.at</code> HttpOnly cookie</td></tr>
+    <tr><td>Object Mapping</td><td>AutoMapper</td></tr>
+    <tr><td>Logging</td><td>Serilog</td></tr>
+    <tr><td>CSV Parsing</td><td>CsvHelper 33.1.0</td></tr>
+    <tr><td>Password Hashing</td><td>ASP.NET Identity <code>PasswordHasher&lt;User&gt;</code></td></tr>
+  </table>
+  <div class="callout">The original design doc listed MySQL as the database. The implementation uses SQL Server.</div>
+</div>
+
+<!-- SECTION 3 -->
+<div class="section" id="architecture">
+  <h2>3. Architecture</h2>
+  <p>Standard layered architecture:</p>
+  <pre><code>Controllers → Services (Interface + Impl) → Repositories (Interface + Impl) → DbContext (EF Core)</code></pre>
+
+  <h3>Directory Layout</h3>
+  <pre><code>budget-api/
+├── Controllers/
+├── Services/
+│   └── Interface/
+├── Repositories/
+│   └── Interface/
+├── Models/
+│   ├── Entities/       # EF Core entities
+│   ├── DTOs/           # Request / response shapes
+│   ├── Enums/
+│   └── CSV/            # CsvHelper record models
+├── Profiles/           # AutoMapper profiles
+├── DbConext/           # BudgetsDbContext
+├── Extensions/         # ServiceExtensions (DI registration)
+├── Migrations/
+└── postman/            # Postman collection modules + build.py assembler</code></pre>
+
+  <h3>DI Lifetimes</h3>
+  <table>
+    <tr><th>Layer</th><th>Lifetime</th><th>Reason</th></tr>
+    <tr><td>Repositories</td><td>Scoped</td><td>Share one DbContext per request so tracked entity changes are visible across repos</td></tr>
+    <tr><td>Services</td><td>Transient</td><td>Stateless; resolved fresh on each injection</td></tr>
+  </table>
+</div>
+
+<!-- SECTION 4 -->
+<div class="section" id="auth">
+  <h2>4. Authentication</h2>
+  <p>JWT tokens are issued on login and delivered as an <code>app.at</code> HttpOnly cookie. Clients must extract the token from the cookie and send it as a Bearer token on subsequent requests:</p>
+  <pre><code>Authorization: Bearer &lt;token&gt;</code></pre>
+  <p>All endpoints except <code>POST /api/authentication/register</code> and <code>POST /api/authentication/login</code> require a valid token.</p>
+  <div class="callout">The original design doc used the path <code>/api/auth/</code>. The implementation uses <code>/api/authentication/</code>.</div>
+</div>
+
+<!-- SECTION 5 -->
+<div class="section" id="models">
+  <h2>5. Data Models</h2>
+
+  <h3 id="model-user">5.1 User</h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>Id</td><td>Guid</td><td>PK</td></tr>
+    <tr><td>Username</td><td>string(50)</td><td>Unique</td></tr>
+    <tr><td>Email</td><td>string(100)</td><td>Unique</td></tr>
+    <tr><td>PasswordHash</td><td>string</td><td>ASP.NET Identity PasswordHasher</td></tr>
+    <tr><td>FirstName</td><td>string(50)</td><td></td></tr>
+    <tr><td>LastName</td><td>string(50)</td><td></td></tr>
+    <tr><td>CreatedAt</td><td>DateTime</td><td>UTC</td></tr>
+    <tr><td>UpdatedAt</td><td>DateTime</td><td>UTC</td></tr>
+  </table>
+
+  <h3 id="model-wallet">5.2 Wallet</h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>Id</td><td>Guid</td><td>PK</td></tr>
+    <tr><td>UserId</td><td>Guid</td><td>FK → Users</td></tr>
+    <tr><td>Name</td><td>string(100)</td><td></td></tr>
+    <tr><td>Balance</td><td>decimal(12,2)</td><td></td></tr>
+    <tr><td>WalletType</td><td>WalletType (enum)</td><td>Stored as string</td></tr>
+    <tr><td>Currency</td><td>Currency (enum)</td><td>Stored as string</td></tr>
+    <tr><td>CreatedAt</td><td>DateTime</td><td>UTC</td></tr>
+    <tr><td>UpdatedAt</td><td>DateTime</td><td>UTC</td></tr>
+    <tr><td>DeletedAt</td><td>DateTime?</td><td>Soft delete</td></tr>
+  </table>
+
+  <h3 id="model-transaction">5.3 Transaction</h3>
+  <div class="callout">Fields <code>IsDuplicate</code> and <code>ImportStatus</code> were added during the Import Batch implementation (Phase 2.8).</div>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>Id</td><td>Guid</td><td>PK</td></tr>
+    <tr><td>WalletId</td><td>Guid</td><td>FK → Wallets</td></tr>
+    <tr><td>UserId</td><td>Guid</td><td>FK → Users</td></tr>
+    <tr><td>SubcategoryId</td><td>Guid?</td><td>FK → TransactionCategories</td></tr>
+    <tr><td>ImportId</td><td>Guid?</td><td>FK → ImportBatches (no nav property)</td></tr>
+    <tr><td>Amount</td><td>decimal(12,2)</td><td></td></tr>
+    <tr><td>TransactionType</td><td>TransactionType (enum)</td><td>Stored as string</td></tr>
+    <tr><td>Date</td><td>DateOnly</td><td></td></tr>
+    <tr><td>Description</td><td>string(500)?</td><td></td></tr>
+    <tr><td>RawDescription</td><td>string(1000)?</td><td>Original bank description</td></tr>
+    <tr><td>BankTxnType</td><td>string(50)?</td><td>Bank-provided type label</td></tr>
+    <tr><td>BalanceAfter</td><td>decimal(12,2)?</td><td>Running balance from bank export</td></tr>
+    <tr><td>CheckNumber</td><td>string(20)?</td><td></td></tr>
+    <tr><td>IsRecurring</td><td>bool</td><td>Default: false</td></tr>
+    <tr><td>RecurringRuleId</td><td>Guid?</td><td>Reserved for future use</td></tr>
+    <tr><td>DuplicateHash</td><td>string(64)?</td><td>SHA256 hex string</td></tr>
+    <tr><td>Source</td><td>TransactionSource (enum)</td><td>Stored as string; default: Manual</td></tr>
+    <tr><td><strong>IsDuplicate</strong></td><td>bool</td><td>Default: false; set during CSV import</td></tr>
+    <tr><td><strong>ImportStatus</strong></td><td>ImportStatus? (enum)</td><td>Null for manual transactions</td></tr>
+    <tr><td>CreatedAt</td><td>DateTime</td><td>UTC</td></tr>
+    <tr><td>UpdatedAt</td><td>DateTime</td><td>UTC</td></tr>
+    <tr><td>DeletedAt</td><td>DateTime?</td><td>Soft delete</td></tr>
+  </table>
+  <h4>Indexes</h4>
+  <ul>
+    <li><code>(UserId, Date)</code></li>
+    <li><code>(WalletId, Date)</code></li>
+    <li><code>DuplicateHash</code></li>
+  </ul>
+
+  <h3 id="model-category">5.4 TransactionCategory</h3>
+  <div class="callout">Fields <code>Icon</code> and <code>Color</code> are implemented but were not in the original design doc.</div>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>Id</td><td>Guid</td><td>PK</td></tr>
+    <tr><td>UserId</td><td>Guid?</td><td>Null = system category</td></tr>
+    <tr><td>BucketId</td><td>Guid?</td><td>FK → SpendingBuckets</td></tr>
+    <tr><td>Name</td><td>string(100)</td><td></td></tr>
+    <tr><td><strong>Icon</strong></td><td>string(50)?</td><td></td></tr>
+    <tr><td><strong>Color</strong></td><td>string(7)?</td><td>Hex, e.g. <code>#FF5733</code></td></tr>
+    <tr><td>IsSystem</td><td>bool</td><td>System categories cannot be deleted</td></tr>
+    <tr><td>CreatedAt</td><td>DateTime</td><td>UTC</td></tr>
+    <tr><td>UpdatedAt</td><td>DateTime</td><td>UTC</td></tr>
+    <tr><td>DeletedAt</td><td>DateTime?</td><td>Soft delete</td></tr>
+  </table>
+
+  <h3 id="model-bucket">5.5 SpendingBucket</h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>Id</td><td>Guid</td><td>PK</td></tr>
+    <tr><td>Name</td><td>string(100)</td><td></td></tr>
+    <tr><td>Description</td><td>string(500)?</td><td></td></tr>
+    <tr><td>CreatedAt</td><td>DateTime</td><td>UTC</td></tr>
+    <tr><td>UpdatedAt</td><td>DateTime</td><td>UTC</td></tr>
+  </table>
+
+  <h3 id="model-budget">5.6 Budget</h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>Id</td><td>Guid</td><td>PK</td></tr>
+    <tr><td>UserId</td><td>Guid</td><td>FK → Users</td></tr>
+    <tr><td>Name</td><td>string(100)</td><td></td></tr>
+    <tr><td>TotalIncome</td><td>decimal(12,2)</td><td></td></tr>
+    <tr><td>StartDate</td><td>DateOnly</td><td></td></tr>
+    <tr><td>EndDate</td><td>DateOnly</td><td></td></tr>
+    <tr><td>IsActive</td><td>bool</td><td></td></tr>
+    <tr><td>CreatedAt</td><td>DateTime</td><td>UTC</td></tr>
+    <tr><td>UpdatedAt</td><td>DateTime</td><td>UTC</td></tr>
+    <tr><td>DeletedAt</td><td>DateTime?</td><td>Soft delete</td></tr>
+  </table>
+  <p><strong>Partial unique index:</strong> Only one active budget per user is allowed (<code>[IsActive] = 1</code> filter).</p>
+
+  <h3 id="model-allocation">5.7 BudgetAllocation</h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>Id</td><td>Guid</td><td>PK</td></tr>
+    <tr><td>BudgetId</td><td>Guid</td><td>FK → Budgets (cascade delete)</td></tr>
+    <tr><td>BucketId</td><td>Guid</td><td>FK → SpendingBuckets (cascade delete)</td></tr>
+    <tr><td>Percentage</td><td>decimal(5,2)</td><td></td></tr>
+    <tr><td>AllocatedAmount</td><td>decimal(12,2)</td><td></td></tr>
+  </table>
+  <p><strong>Validation:</strong> Total allocations across all buckets must not exceed 100%. They are not required to sum to exactly 100%.</p>
+
+  <h3 id="model-batch">5.8 ImportBatch</h3>
+  <div class="callout">Fields present in original design doc but <strong>removed</strong> from implementation: <code>file_size_bytes</code>, <code>bank_format</code>, <code>date_range_start</code>, <code>date_range_end</code>, <code>error_message</code>, <code>completed_at</code> (renamed to <code>ConfirmedAt</code>). <code>RolledBackAt</code> is new.</div>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td>Id</td><td>Guid</td><td>PK, default NewGuid()</td></tr>
+    <tr><td>UserId</td><td>Guid</td><td>FK → Users (Restrict cascade — avoids EF1785)</td></tr>
+    <tr><td>WalletId</td><td>Guid</td><td>FK → Wallets</td></tr>
+    <tr><td>FileName</td><td>string(255)</td><td>Original upload filename</td></tr>
+    <tr><td>Status</td><td>ImportBatchStatus (enum)</td><td></td></tr>
+    <tr><td>TotalRows</td><td>int</td><td>Total rows parsed from CSV</td></tr>
+    <tr><td>ImportedCount</td><td>int</td><td>Confirmed transactions</td></tr>
+    <tr><td>DuplicateCount</td><td>int</td><td>Rows flagged as duplicates on upload</td></tr>
+    <tr><td>SkippedCount</td><td>int</td><td>Rejected transactions on confirm</td></tr>
+    <tr><td>CreatedAt</td><td>DateTime</td><td>UTC</td></tr>
+    <tr><td>ConfirmedAt</td><td>DateTime?</td><td>Set on confirm</td></tr>
+    <tr><td>RolledBackAt</td><td>DateTime?</td><td>Set on rollback</td></tr>
+  </table>
+</div>
+
+<!-- SECTION 6 -->
+<div class="section" id="endpoints">
+  <h2>6. API Endpoints</h2>
+
+  <!-- Auth -->
+  <h3 id="ep-auth">6.1 Auth — <code>/api/authentication</code></h3>
+
+  <h4>Register</h4>
+  <div class="endpoint"><span class="method post">POST</span><span class="path">/api/authentication/register</span></div>
+  <p><strong>Request body:</strong></p>
+  <pre><code>{
+  "username": "string",
+  "email": "string",
+  "password": "string",
+  "firstName": "string",
+  "lastName": "string"
+}</code></pre>
+  <p><strong>Response:</strong> <code>201 Created</code> — user object</p>
+
+  <h4>Login</h4>
+  <div class="endpoint"><span class="method post">POST</span><span class="path">/api/authentication/login</span></div>
+  <p><strong>Request body:</strong></p>
+  <pre><code>{
+  "username": "string",
+  "password": "string"
+}</code></pre>
+  <p><strong>Response:</strong> <code>200 OK</code> — Sets <code>app.at</code> HttpOnly cookie containing the JWT. Returns user object.</p>
+
+  <!-- Wallets -->
+  <h3 id="ep-wallets">6.2 Wallets — <code>/api/wallets</code></h3>
+  <p>All endpoints require authentication.</p>
+  <table>
+    <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/api/wallets</code></td><td>Get authenticated user + wallets array</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/api/wallets/{id}</code></td><td>Get single wallet</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/api/wallets</code></td><td>Create wallet</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code>/api/wallets/{id}</code></td><td>Update wallet</td></tr>
+    <tr><td><span class="method delete">DELETE</span></td><td><code>/api/wallets/{id}</code></td><td>Soft delete wallet</td></tr>
+  </table>
+  <p><strong>Create / Update body:</strong></p>
+  <pre><code>{
+  "name": "string",
+  "balance": 0.00,
+  "walletType": "Checking",
+  "currency": "USD"
+}</code></pre>
+
+  <!-- Transactions -->
+  <h3 id="ep-transactions">6.3 Transactions — <code>/api/transactions</code></h3>
+  <p>All endpoints require authentication.</p>
+  <table>
+    <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/api/transactions?walletId={guid}</code></td><td>List transactions for a wallet</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/api/transactions/{id}</code></td><td>Get single transaction</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/api/transactions</code></td><td>Create transaction, adjusts wallet balance</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code>/api/transactions/{id}</code></td><td>Partial update (null fields are skipped)</td></tr>
+    <tr><td><span class="method delete">DELETE</span></td><td><code>/api/transactions/{id}</code></td><td>Soft delete, reverses balance adjustment</td></tr>
+  </table>
+  <p><strong>Create body:</strong></p>
+  <pre><code>{
+  "walletId": "guid",
+  "amount": 0.00,
+  "transactionType": "Income",
+  "date": "2026-01-01",
+  "description": "string",
+  "subcategoryId": "guid (optional)"
+}</code></pre>
+  <p><strong>Balance adjustment:</strong> Income → <code>balance += amount</code>&nbsp;&nbsp;|&nbsp;&nbsp;Expense → <code>balance -= amount</code></p>
+
+  <!-- Categories -->
+  <h3 id="ep-categories">6.4 Transaction Categories — <code>/api/transactioncategories</code></h3>
+  <p>Returns both system categories (<code>IsSystem=true</code>, <code>UserId=null</code>) and user-owned categories. Requires authentication.</p>
+  <table>
+    <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/api/transactioncategories</code></td><td>List all (system + own)</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/api/transactioncategories/{id}</code></td><td>Get one</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/api/transactioncategories</code></td><td>Create user category</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code>/api/transactioncategories/{id}</code></td><td>Update</td></tr>
+    <tr><td><span class="method delete">DELETE</span></td><td><code>/api/transactioncategories/{id}</code></td><td>Soft delete (system categories blocked)</td></tr>
+  </table>
+
+  <!-- Buckets -->
+  <h3 id="ep-buckets">6.5 Spending Buckets — <code>/api/spendingbuckets</code></h3>
+  <p>Standard CRUD. Requires authentication.</p>
+  <table>
+    <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/api/spendingbuckets</code></td><td>List all</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/api/spendingbuckets/{id}</code></td><td>Get one</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/api/spendingbuckets</code></td><td>Create</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code>/api/spendingbuckets/{id}</code></td><td>Update</td></tr>
+    <tr><td><span class="method delete">DELETE</span></td><td><code>/api/spendingbuckets/{id}</code></td><td>Delete</td></tr>
+  </table>
+
+  <!-- Budgets -->
+  <h3 id="ep-budgets">6.6 Budgets — <code>/api/budgets</code></h3>
+  <p>Requires authentication. Only one active budget per user is allowed.</p>
+  <table>
+    <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/api/budgets</code></td><td>List user budgets</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/api/budgets/{id}</code></td><td>Get one</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/api/budgets</code></td><td>Create budget</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code>/api/budgets/{id}</code></td><td>Update</td></tr>
+    <tr><td><span class="method delete">DELETE</span></td><td><code>/api/budgets/{id}</code></td><td>Soft delete</td></tr>
+  </table>
+  <p><strong>Create body:</strong></p>
+  <pre><code>{
+  "name": "string",
+  "totalIncome": 0.00,
+  "startDate": "2026-01-01",
+  "endDate": "2026-01-31",
+  "isActive": true
+}</code></pre>
+
+  <!-- Allocations -->
+  <h3 id="ep-allocations">6.7 Budget Allocations — <code>/api/budgets/{budgetId}/allocations</code></h3>
+  <p>Requires authentication. Total allocations across all buckets must not exceed 100%.</p>
+  <table>
+    <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/api/budgets/{budgetId}/allocations</code></td><td>List allocations</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/api/budgets/{budgetId}/allocations/{id}</code></td><td>Get one</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/api/budgets/{budgetId}/allocations</code></td><td>Create</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code>/api/budgets/{budgetId}/allocations/{id}</code></td><td>Update</td></tr>
+    <tr><td><span class="method delete">DELETE</span></td><td><code>/api/budgets/{budgetId}/allocations/{id}</code></td><td>Delete</td></tr>
+  </table>
+  <p><strong>Create body:</strong></p>
+  <pre><code>{
+  "bucketId": "guid",
+  "percentage": 30.00,
+  "allocatedAmount": 1500.00
+}</code></pre>
+
+  <!-- Import -->
+  <h3 id="ep-import">6.8 Import Batches — <code>/api/import</code></h3>
+  <p>Requires authentication. Import is a multi-step flow:</p>
+  <pre><code>Step 1: Upload CSV        →  batch created  (Status: Reviewing)
+Step 2: Review            →  batch approve / reject duplicates
+Step 3: Confirm or Rollback</code></pre>
+
+  <h4>Step 1 — Upload CSV</h4>
+  <div class="endpoint"><span class="method post">POST</span><span class="path">/api/import/wallets/{walletId}</span></div>
+  <p><strong>Content-Type:</strong> <code>multipart/form-data</code><br/>
+  <strong>Form field:</strong> <code>file</code> — must be a <code>.csv</code> file</p>
+
+  <p><strong>Expected CSV columns:</strong></p>
+  <table>
+    <tr><th>Column</th><th>Required</th><th>Notes</th></tr>
+    <tr><td>Date</td><td>Yes</td><td>Parseable date string</td></tr>
+    <tr><td>Amount</td><td>Yes</td><td>Decimal</td></tr>
+    <tr><td>Type</td><td>Yes</td><td><code>Income</code> or <code>Expense</code></td></tr>
+    <tr><td>Description</td><td>No</td><td>User-facing description</td></tr>
+    <tr><td>RawDescription</td><td>No</td><td>Original bank description</td></tr>
+    <tr><td>BankTxnType</td><td>No</td><td>Bank-provided type label</td></tr>
+    <tr><td>CheckNumber</td><td>No</td><td></td></tr>
+    <tr><td>BalanceAfter</td><td>No</td><td>Decimal — running balance from bank</td></tr>
+  </table>
+
+  <p><strong>Duplicate detection:</strong> For each row, a SHA256 hash is computed and compared against all non-deleted transactions in the wallet:</p>
+  <pre><code>input  = "{walletId}|{date:yyyy-MM-dd}|{amount}|{rawDescription?.ToLower().Trim()}"
+hash   = SHA256(UTF8(input)).ToHexString().ToLower()   // 64-char hex</code></pre>
+  <p>If the hash already exists, <code>IsDuplicate = true</code> is set on the imported transaction (it is NOT automatically skipped).</p>
+  <p><strong>Response:</strong> <code>201 Created</code> — <code>ImportBatchDto</code></p>
+  <pre><code>{
+  "id": "guid",
+  "walletId": "guid",
+  "fileName": "export.csv",
+  "status": "Reviewing",
+  "totalRows": 10,
+  "importedCount": 0,
+  "duplicateCount": 3,
+  "skippedCount": 0,
+  "createdAt": "2026-01-01T00:00:00Z",
+  "confirmedAt": null,
+  "rolledBackAt": null
+}</code></pre>
+
+  <h4>Get All Batches</h4>
+  <div class="endpoint"><span class="method get">GET</span><span class="path">/api/import</span></div>
+  <p>Returns list of <code>ImportBatchDto</code> for the authenticated user.</p>
+
+  <h4>Step 2 — Review Batch</h4>
+  <div class="endpoint"><span class="method get">GET</span><span class="path">/api/import/{id}</span></div>
+  <p>Returns <code>ImportBatchDetailDto</code> (extends <code>ImportBatchDto</code>):</p>
+  <pre><code>{
+  ...ImportBatchDto fields...,
+  "pendingDuplicates": 3,
+  "readyToConfirm": false,
+  "transactions": [
+    {
+      "id": "guid",
+      "amount": 100.00,
+      "transactionType": "Income",
+      "date": "2026-01-15",
+      "description": "Payroll",
+      "rawDescription": "PAYROLL DEPOSIT",
+      "bankTxnType": "Credit",
+      "isDuplicate": true,
+      "importStatus": "Pending"
+    }
+  ]
+}</code></pre>
+  <table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td><code>pendingDuplicates</code></td><td>Count of transactions where <code>IsDuplicate=true</code> AND <code>ImportStatus=Pending</code>. Computed in service layer — not stored.</td></tr>
+    <tr><td><code>readyToConfirm</code></td><td><code>pendingDuplicates == 0</code>. Informational — confirm is NOT blocked by this flag.</td></tr>
+  </table>
+
+  <h4>Step 2b — Batch Approve Duplicates</h4>
+  <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/api/import/{id}/transactions/approve</span></div>
+  <p>Sets <code>ImportStatus = Approved</code> on specified transactions.</p>
+  <pre><code>{
+  "transactionIds": ["guid", "guid"]
+}</code></pre>
+
+  <h4>Step 2c — Batch Reject Duplicates</h4>
+  <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/api/import/{id}/transactions/reject</span></div>
+  <p>Sets <code>ImportStatus = Rejected</code> on specified transactions.</p>
+  <pre><code>{
+  "transactionIds": ["guid", "guid"]
+}</code></pre>
+
+  <h4>Step 3a — Confirm Batch</h4>
+  <div class="endpoint"><span class="method post">POST</span><span class="path">/api/import/{id}/confirm</span></div>
+  <p>Finalizes the batch:</p>
+  <ol>
+    <li>Transactions with <code>ImportStatus = Rejected</code> → soft-deleted, counted in <code>SkippedCount</code></li>
+    <li>Remaining transactions (Pending + Approved) → <code>ImportStatus = Confirmed</code>, counted in <code>ImportedCount</code></li>
+    <li>Wallet balance adjusted per transaction type (Income: +amount, Expense: −amount)</li>
+    <li><code>Batch.Status = Confirmed</code>, <code>ConfirmedAt = UTC now</code></li>
+  </ol>
+  <p><strong>Response:</strong> <code>200 OK</code> — updated <code>ImportBatchDto</code><br/>
+  <strong>Error:</strong> <code>400</code> if batch status is not <code>Reviewing</code></p>
+
+  <h4>Step 3b — Rollback Batch</h4>
+  <div class="endpoint"><span class="method post">POST</span><span class="path">/api/import/{id}/rollback</span></div>
+  <p>Reverses a confirmed batch using <strong>delta reversal</strong> (not full recalculation):</p>
+  <ol>
+    <li>Loads all non-soft-deleted batch transactions (these are all Confirmed at this point)</li>
+    <li>Reverses wallet balance delta: Income → <code>balance -= amount</code>, Expense → <code>balance += amount</code></li>
+    <li>Soft-deletes all non-soft-deleted batch transactions</li>
+    <li><code>Batch.Status = RolledBack</code>, <code>RolledBackAt = UTC now</code></li>
+  </ol>
+  <p><strong>Response:</strong> <code>200 OK</code> — updated <code>ImportBatchDto</code><br/>
+  <strong>Error:</strong> <code>400</code> if batch status is not <code>Confirmed</code></p>
+  <div class="callout">A <code>Reviewing</code> batch cannot be rolled back — abandon or delete it instead.</div>
+</div>
+
+<!-- SECTION 7 -->
+<div class="section" id="enums">
+  <h2>7. Enums</h2>
+  <table>
+    <tr><th>Enum</th><th>Values</th></tr>
+    <tr><td>WalletType</td><td>Checking, Savings, CreditCard, Cash, Investment, Other</td></tr>
+    <tr><td>Currency</td><td>USD, EUR, GBP, JPY, PHP, ...</td></tr>
+    <tr><td>TransactionType</td><td>Income, Expense</td></tr>
+    <tr><td>TransactionSource</td><td>Manual, Import</td></tr>
+    <tr><td>ImportBatchStatus</td><td>Reviewing, Confirmed, RolledBack</td></tr>
+    <tr><td>ImportStatus (per-transaction)</td><td>Pending, Confirmed, Rejected</td></tr>
+  </table>
+  <div class="callout">
+    <strong>ImportBatchStatus change:</strong> The original design doc defined 5 states: <code>PENDING, REVIEWING, COMPLETED, ROLLED_BACK, FAILED</code>. The implementation simplifies to 3 states: <code>Reviewing, Confirmed, RolledBack</code>. There is no explicit FAILED state — errors are surfaced as HTTP 400/500 responses.
+  </div>
+  <p>All enums that are stored in the database use <strong>string conversion</strong> (not integer values) for readability and migration safety.</p>
+</div>
+
+<!-- SECTION 8 -->
+<div class="section" id="patterns">
+  <h2>8. Design Patterns</h2>
+
+  <h3>AutoMapper PreCondition for Nullable Value Types</h3>
+  <p>For nullable value type fields in Update DTOs, use <code>PreCondition</code> (not <code>Condition</code>) to skip the mapping when the source is null:</p>
+  <pre><code>.ForMember(dest => dest.Amount, opt => opt.PreCondition(src => src.Amount.HasValue))</code></pre>
+
+  <h3>Never Call .Update() on EF Core Tracked Entities</h3>
+  <p>After a <code>.FindAsync()</code> or <code>.FirstOrDefaultAsync()</code>, the entity is already change-tracked. Modify properties directly and call <code>SaveChangesAsync()</code> — calling <code>.Update()</code> is redundant and can cause issues.</p>
+
+  <h3>Bulk Updates via ExecuteUpdateAsync</h3>
+  <p>Use <code>ExecuteUpdateAsync</code> when updating many rows without needing to load entities into memory (e.g., batch approve/reject).</p>
+
+  <h3>Soft Deletes</h3>
+  <p>All main entities support soft delete via a <code>DeletedAt</code> timestamp. All queries filter <code>DeletedAt == null</code> by default.</p>
+
+  <h3>FK Cascade Cycle Fix (SQL Server Error 1785)</h3>
+  <p>SQL Server rejects migrations where multiple cascade paths exist between two tables. Fix: use <code>DeleteBehavior.Restrict</code> on the secondary FK path. Applied to <code>ImportBatch → User (UserId)</code>.</p>
+  <pre><code>modelBuilder.Entity&lt;ImportBatch&gt;()
+    .HasOne(b => b.User)
+    .WithMany()
+    .HasForeignKey(b => b.UserId)
+    .OnDelete(DeleteBehavior.Restrict);</code></pre>
+
+  <h3>Shared DbContext per Request</h3>
+  <p>Repositories are registered as <code>Scoped</code>, sharing one <code>DbContext</code> instance within a request. Changes made by one repository are immediately visible to another without re-querying.</p>
+
+  <h3>Delta-Based Balance Updates</h3>
+  <p>Wallet balance is always adjusted by a delta (<code>+amount</code> / <code>-amount</code>), not recalculated from all transactions. This applies to both manual CRUD and import confirm/rollback.</p>
+</div>
+
+<!-- SECTION 9 -->
+<div class="section" id="errors">
+  <h2>9. Error Handling</h2>
+  <table>
+    <tr><th>Status</th><th>Meaning</th></tr>
+    <tr><td>400</td><td>Validation failure or invalid state transition (e.g., confirm on already-confirmed batch)</td></tr>
+    <tr><td>401</td><td>Missing or invalid JWT</td></tr>
+    <tr><td>403</td><td>Resource belongs to a different user</td></tr>
+    <tr><td>404</td><td>Resource not found</td></tr>
+    <tr><td>409</td><td>Conflict (e.g., attempting to create a second active budget)</td></tr>
+    <tr><td>500</td><td>Unhandled server error</td></tr>
+  </table>
+</div>
+
+<!-- SECTION 10 -->
+<div class="section" id="roadmap">
+  <h2>10. Roadmap</h2>
+
+  <h3>Completed</h3>
+  <table>
+    <tr><th>Phase</th><th>Feature</th><th>Status</th></tr>
+    <tr><td>1</td><td>Auth — register, login</td><td><span class="status done">Done</span></td></tr>
+    <tr><td>2.1</td><td>Wallets — CRUD</td><td><span class="status done">Done</span></td></tr>
+    <tr><td>2.2</td><td>Transactions — manual CRUD with balance adjustment</td><td><span class="status done">Done</span></td></tr>
+    <tr><td>2.3</td><td>SpendingBuckets — CRUD</td><td><span class="status done">Done</span></td></tr>
+    <tr><td>2.4</td><td>TransactionCategories — system + user-scoped, soft delete</td><td><span class="status done">Done</span></td></tr>
+    <tr><td>2.6</td><td>Budgets — CRUD, one-active-per-user constraint</td><td><span class="status done">Done</span></td></tr>
+    <tr><td>2.7</td><td>BudgetAllocations — nested CRUD, ≤100% validation</td><td><span class="status done">Done</span></td></tr>
+    <tr><td>2.8</td><td>ImportBatch — CSV upload, duplicate detection, batch approve/reject, confirm, rollback</td><td><span class="status done">Done</span></td></tr>
+  </table>
+
+  <h3>Planned</h3>
+  <table>
+    <tr><th>Phase</th><th>Feature</th><th>Status</th></tr>
+    <tr><td>3.1</td><td>Recurring transactions</td><td><span class="status planned">Planned</span></td></tr>
+    <tr><td>3.2</td><td>Reports / spending summaries</td><td><span class="status planned">Planned</span></td></tr>
+    <tr><td>3.3</td><td>Notifications / budget alerts</td><td><span class="status planned">Planned</span></td></tr>
+    <tr><td>4.0</td><td>Multi-currency support</td><td><span class="status planned">Planned</span></td></tr>
+  </table>
+</div>
+
+</body>
+</html>
