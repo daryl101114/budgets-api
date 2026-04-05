@@ -27,15 +27,18 @@ namespace budget_api
                 .CreateLogger();
 
             var builder = WebApplication.CreateBuilder(args);
+            var allowedOrigin = builder.Configuration["Cors:AllowedOrigin"]
+                ?? throw new InvalidOperationException("Cors:AllowedOrigin is not configured.");
+
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowSpecificOrigin",
-                    builder =>
+                    policy =>
                     {
-                        builder.WithOrigins("http://localhost:5173")
-                               .AllowCredentials() // Important: allow sending cookies
-                               .AllowAnyMethod()
-                               .AllowAnyHeader();
+                        policy.WithOrigins(allowedOrigin)
+                              .AllowCredentials()
+                              .AllowAnyMethod()
+                              .AllowAnyHeader();
                     });
             });
 
@@ -90,6 +93,15 @@ namespace budget_api
                             Convert.FromBase64String(
                                 builder.Configuration["Authentication:SecretForKey"]))
                     };
+                    opt.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+                    {
+                        OnMessageReceived = ctx =>
+                        {
+                            if (ctx.Request.Cookies.TryGetValue("app.at", out var token))
+                                ctx.Token = token;
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
             var app = builder.Build();
 
@@ -101,7 +113,12 @@ namespace budget_api
             }
             app.UseCors("AllowSpecificOrigin");
 
-            app.UseHttpsRedirection();
+            if (!app.Environment.IsDevelopment())
+            {
+                app.UseHttpsRedirection();
+            }
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 
