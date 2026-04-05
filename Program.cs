@@ -93,6 +93,15 @@ namespace budget_api
                             Convert.FromBase64String(
                                 builder.Configuration["Authentication:SecretForKey"]))
                     };
+                    opt.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+                    {
+                        OnMessageReceived = ctx =>
+                        {
+                            if (ctx.Request.Cookies.TryGetValue("app.at", out var token))
+                                ctx.Token = token;
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
             var app = builder.Build();
 
