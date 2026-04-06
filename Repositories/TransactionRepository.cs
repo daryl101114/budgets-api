@@ -1,5 +1,6 @@
 using budget_api.DbConext;
 using budget_api.Models.Entities;
+using budget_api.Models.Enums;
 using budget_api.Repositories.Interface;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,12 +20,25 @@ namespace budget_api.Repositories
             await _context.Transactions.AddAsync(transaction);
         }
 
-        public async Task<IEnumerable<Transaction>> GetTransactionsByWalletAsync(Guid walletId, Guid userId)
+        public async Task<List<Transaction>> GetTransactionsByWalletAsync(
+            Guid walletId, Guid userId, int limit, DateOnly? cursorDate, DateTime? cursorCreatedAt)
         {
-            return await _context.Transactions
+            var query = _context.Transactions
                 .Include(t => t.Subcategory)
-                .Where(t => t.WalletId == walletId && t.UserId == userId && t.DeletedAt == null)
+                .Where(t => t.WalletId == walletId && t.UserId == userId && t.DeletedAt == null
+                         && (t.Source == TransactionSource.Manual || t.ImportStatus == ImportStatus.Confirmed));
+
+            if (cursorDate.HasValue && cursorCreatedAt.HasValue)
+            {
+                query = query.Where(t =>
+                    t.Date < cursorDate.Value ||
+                    (t.Date == cursorDate.Value && t.CreatedAt < cursorCreatedAt.Value));
+            }
+
+            return await query
                 .OrderByDescending(t => t.Date)
+                .ThenByDescending(t => t.CreatedAt)
+                .Take(limit)
                 .ToListAsync();
         }
 

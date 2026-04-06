@@ -382,6 +382,61 @@ namespace budget_api.Migrations
                     b.ToTable("Wallets");
                 });
 
+            modelBuilder.Entity("budget_api.Models.Entities.WalletImportProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AmountColumn")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BalanceAfterColumn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BankTxnTypeColumn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CheckNumberColumn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DateColumn")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DescriptionColumn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ExpenseTypeValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IncomeTypeValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RawDescriptionColumn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TypeColumn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("WalletId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WalletId")
+                        .IsUnique();
+
+                    b.ToTable("WalletImportProfiles");
+                });
+
             modelBuilder.Entity("budget_api.Models.Entities.Budget", b =>
                 {
                     b.HasOne("budget_api.Models.Entities.User", "User")
@@ -482,6 +537,17 @@ namespace budget_api.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("budget_api.Models.Entities.WalletImportProfile", b =>
+                {
+                    b.HasOne("budget_api.Models.Entities.Wallet", "Wallet")
+                        .WithMany()
+                        .HasForeignKey("WalletId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Wallet");
                 });
 
             modelBuilder.Entity("budget_api.Models.Entities.Budget", b =>

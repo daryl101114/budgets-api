@@ -1,4 +1,5 @@
 using budget_api.Models.Entities;
+using budget_api.Models.Enums;
 
 namespace budget_api.Repositories.Interface
 {
@@ -6,7 +7,7 @@ namespace budget_api.Repositories.Interface
     {
         Task CreateAsync(ImportBatch batch);
         Task<ImportBatch?> GetByIdAsync(Guid batchId, Guid userId);
-        Task<IEnumerable<ImportBatch>> GetByUserIdAsync(Guid userId);
+        Task<IEnumerable<ImportBatch>> GetByUserIdAsync(Guid userId, ImportBatchStatus? status = null);
         Task<List<Transaction>> GetBatchTransactionsAsync(Guid batchId);
         Task<HashSet<string>> GetExistingHashesAsync(Guid walletId);
         Task<bool> SaveChangesAsync();

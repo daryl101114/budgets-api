@@ -1,5 +1,6 @@
 using budget_api.DbConext;
 using budget_api.Models.Entities;
+using budget_api.Models.Enums;
 using budget_api.Repositories.Interface;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,10 +26,10 @@ namespace budget_api.Repositories
                 .FirstOrDefaultAsync(b => b.Id == batchId && b.UserId == userId);
         }
 
-        public async Task<IEnumerable<ImportBatch>> GetByUserIdAsync(Guid userId)
+        public async Task<IEnumerable<ImportBatch>> GetByUserIdAsync(Guid userId, ImportBatchStatus? status = null)
         {
             return await _context.ImportBatches
-                .Where(b => b.UserId == userId)
+                .Where(b => b.UserId == userId && (status == null || b.Status == status))
                 .OrderByDescending(b => b.CreatedAt)
                 .ToListAsync();
         }

@@ -1,7 +1,10 @@
+using System.Globalization;
+using System.Text;
 using AutoMapper;
 using budget_api.Models.DTOs;
 using budget_api.Models.Entities;
 using budget_api.Models.Enums;
+using budget_api.Models.Pagination;
 using budget_api.Repositories.Interface;
 using budget_api.Services.Interface;
 
@@ -28,10 +31,55 @@ namespace budget_api.Services
             await _transactionRepository.SaveChangesAsync();
         }
 
-        public async Task<IEnumerable<TransactionDto>> GetTransactionsByWalletAsync(Guid walletId, Guid userId)
+        public async Task<CursorPagedResult<TransactionDto>> GetTransactionsByWalletAsync(
+            Guid walletId, Guid userId, int limit, string? cursor)
         {
-            var transactions = await _transactionRepository.GetTransactionsByWalletAsync(walletId, userId);
-            return _mapper.Map<IEnumerable<TransactionDto>>(transactions);
+            limit = Math.Clamp(limit, 1, 100);
+
+            (DateOnly? cursorDate, DateTime? cursorCreatedAt) = DecodeCursor(cursor);
+
+            // Fetch one extra to determine if there are more pages
+            var rows = await _transactionRepository.GetTransactionsByWalletAsync(
+                walletId, userId, limit + 1, cursorDate, cursorCreatedAt);
+
+            var hasMore = rows.Count > limit;
+            var page = hasMore ? rows.Take(limit).ToList() : rows;
+
+            var lastItem = page.LastOrDefault();
+            var nextCursor = hasMore && lastItem != null
+                ? EncodeCursor(lastItem.Date, lastItem.CreatedAt)
+                : null;
+
+            return new CursorPagedResult<TransactionDto>
+            {
+                Data = _mapper.Map<List<TransactionDto>>(page),
+                NextCursor = nextCursor,
+                HasMore = hasMore
+            };
+        }
+
+        private static string EncodeCursor(DateOnly date, DateTime createdAt)
+        {
+            var raw = $"{date:yyyy-MM-dd}|{createdAt:O}";
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(raw));
+        }
+
+        private static (DateOnly? date, DateTime? createdAt) DecodeCursor(string? cursor)
+        {
+            if (string.IsNullOrWhiteSpace(cursor)) return (null, null);
+
+            try
+            {
+                var raw = Encoding.UTF8.GetString(Convert.FromBase64String(cursor));
+                var parts = raw.Split('|');
+                var date = DateOnly.Parse(parts[0], CultureInfo.InvariantCulture);
+                var createdAt = DateTime.Parse(parts[1], null, DateTimeStyles.RoundtripKind);
+                return (date, createdAt);
+            }
+            catch
+            {
+                throw new FormatException("Invalid cursor.");
+            }
         }
 
         public async Task<TransactionDto?> GetTransactionByIdAsync(Guid transactionId, Guid userId)

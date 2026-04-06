@@ -16,6 +16,7 @@ namespace budget_api.DbConext
         public DbSet<Budget> Budgets { get; set; }
         public DbSet<BudgetAllocation> BudgetAllocations { get; set; }
         public DbSet<ImportBatch> ImportBatches { get; set; }
+        public DbSet<WalletImportProfile> WalletImportProfiles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -51,6 +52,11 @@ namespace budget_api.DbConext
             modelBuilder.Entity<Budget>()
                 .HasIndex(b => b.UserId)
                 .HasFilter("[IsActive] = 1")
+                .IsUnique();
+
+            // WalletImportProfile — one profile per wallet
+            modelBuilder.Entity<WalletImportProfile>()
+                .HasIndex(p => p.WalletId)
                 .IsUnique();
 
             // ImportBatch — restrict cascade on UserId to avoid multiple cascade paths

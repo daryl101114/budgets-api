@@ -38,15 +38,23 @@ namespace budget_api.Controllers
         }
 
         [HttpGet("wallet/{walletId}")]
-        public async Task<IActionResult> GetWalletTransactions(Guid walletId)
+        public async Task<IActionResult> GetWalletTransactions(
+            Guid walletId,
+            [FromQuery] int limit = 20,
+            [FromQuery] string? cursor = null)
         {
             try
             {
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
                 if (userId == null) return Unauthorized();
 
-                var transactions = await _transactionService.GetTransactionsByWalletAsync(walletId, new Guid(userId));
-                return Ok(transactions);
+                var result = await _transactionService.GetTransactionsByWalletAsync(
+                    walletId, new Guid(userId), limit, cursor);
+                return Ok(result);
+            }
+            catch (FormatException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
