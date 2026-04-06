@@ -36,7 +36,17 @@ export type TransactionSource = "Manual" | "Import";
 
 export type ImportBatchStatus = "Reviewing" | "Confirmed" | "RolledBack";
 
-export type ImportStatus = "Pending" | "Confirmed" | "Rejected";
+export type ImportStatus = "Pending" | "Approved" | "Rejected" | "Confirmed";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGINATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CursorPagedResult<T> {
+  data: T[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MODELS
@@ -360,8 +370,10 @@ export const api = {
 
   // ── Transactions ──────────────────────────────────────────────────────────
   transactions: {
-    getAll: (walletId: string) =>
-      request<Transaction[]>(`${ENDPOINTS.transactions}?walletId=${walletId}`),
+    getAll: (walletId: string, limit = 20, cursor?: string) =>
+      request<CursorPagedResult<Transaction>>(
+        `${ENDPOINTS.transactions}/wallet/${walletId}?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`
+      ),
 
     getOne: (id: string) =>
       request<Transaction>(ENDPOINTS.transaction(id)),

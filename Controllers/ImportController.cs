@@ -1,4 +1,5 @@
 using budget_api.Models.DTOs;
+using budget_api.Models.Enums;
 using budget_api.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -52,14 +53,14 @@ namespace budget_api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetBatches()
+        public async Task<IActionResult> GetBatches([FromQuery] ImportBatchStatus? status = null)
         {
             try
             {
                 var userId = GetUserId();
                 if (userId == null) return Unauthorized();
 
-                return Ok(await _importService.GetBatchesAsync(userId.Value));
+                return Ok(await _importService.GetBatchesAsync(userId.Value, status));
             }
             catch (Exception ex)
             {

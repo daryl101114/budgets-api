@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using AutoMapper;
 using budget_api.Models.CSV;
+using budget_api.Models.CSV.Strategies;
 using budget_api.Models.DTOs;
 using budget_api.Models.Entities;
 using budget_api.Models.Enums;
@@ -18,17 +19,23 @@ namespace budget_api.Services
         private readonly IImportRepository _importRepository;
         private readonly IWalletRepository _walletRepository;
         private readonly ITransactionRepository _transactionRepository;
+        private readonly IWalletImportProfileRepository _profileRepository;
+        private readonly IEnumerable<IImportFormatStrategy> _strategies;
         private readonly IMapper _mapper;
 
         public ImportService(
             IImportRepository importRepository,
             IWalletRepository walletRepository,
             ITransactionRepository transactionRepository,
+            IWalletImportProfileRepository profileRepository,
+            IEnumerable<IImportFormatStrategy> strategies,
             IMapper mapper)
         {
             _importRepository = importRepository;
             _walletRepository = walletRepository;
             _transactionRepository = transactionRepository;
+            _profileRepository = profileRepository;
+            _strategies = strategies;
             _mapper = mapper;
         }
 
@@ -37,7 +44,8 @@ namespace budget_api.Services
             var wallet = await _walletRepository.GetWalletByIdAsync(walletId, userId)
                 ?? throw new KeyNotFoundException("Wallet not found.");
 
-            var records = ParseCsv(file);
+            var strategy = await ResolveStrategyAsync(walletId, file);
+            var records = ParseCsv(file, strategy);
 
             var existingHashes = await _importRepository.GetExistingHashesAsync(walletId);
 
@@ -58,8 +66,14 @@ namespace budget_api.Services
             foreach (var record in records)
             {
                 var date = ParseDate(record.Date);
-                var txType = ParseTransactionType(record.Type);
-                var hash = ComputeHash(walletId, date, record.Amount, record.RawDescription);
+                var txType = string.IsNullOrWhiteSpace(record.Type)
+                    ? (record.Amount >= 0 ? TransactionType.Income : TransactionType.Expense)
+                    : strategy.ParseTransactionType(record.Type);
+                var amount = Math.Abs(record.Amount);
+                var rawDescription = string.IsNullOrWhiteSpace(record.RawDescription)
+                    ? record.Description
+                    : record.RawDescription;
+                var hash = ComputeHash(walletId, date, amount, rawDescription);
                 var isDuplicate = existingHashes.Contains(hash);
 
                 if (isDuplicate) duplicateCount++;
@@ -68,11 +82,11 @@ namespace budget_api.Services
                 {
                     WalletId = walletId,
                     UserId = userId,
-                    Amount = record.Amount,
+                    Amount = amount,
                     TransactionType = txType,
                     Date = date,
                     Description = record.Description,
-                    RawDescription = record.RawDescription,
+                    RawDescription = rawDescription,
                     BankTxnType = record.BankTxnType,
                     CheckNumber = record.CheckNumber,
                     BalanceAfter = record.BalanceAfter,
@@ -94,9 +108,9 @@ namespace budget_api.Services
             return _mapper.Map<ImportBatchDto>(batch);
         }
 
-        public async Task<IEnumerable<ImportBatchDto>> GetBatchesAsync(Guid userId)
+        public async Task<IEnumerable<ImportBatchDto>> GetBatchesAsync(Guid userId, ImportBatchStatus? status = null)
         {
-            var batches = await _importRepository.GetByUserIdAsync(userId);
+            var batches = await _importRepository.GetByUserIdAsync(userId, status);
             return _mapper.Map<IEnumerable<ImportBatchDto>>(batches);
         }
 
@@ -124,9 +138,9 @@ namespace budget_api.Services
 
             var transactions = await _importRepository.GetBatchTransactionsAsync(batchId);
 
-            foreach (var tx in transactions.Where(t => transactionIds.Contains(t.Id) && t.IsDuplicate))
+            foreach (var tx in transactions.Where(t => transactionIds.Contains(t.Id)))
             {
-                tx.ImportStatus = ImportStatus.Confirmed;
+                tx.ImportStatus = ImportStatus.Approved;
             }
 
             await _importRepository.SaveChangesAsync();
@@ -142,7 +156,7 @@ namespace budget_api.Services
 
             var transactions = await _importRepository.GetBatchTransactionsAsync(batchId);
 
-            foreach (var tx in transactions.Where(t => transactionIds.Contains(t.Id) && t.IsDuplicate))
+            foreach (var tx in transactions.Where(t => transactionIds.Contains(t.Id)))
             {
                 tx.ImportStatus = ImportStatus.Rejected;
             }
@@ -176,7 +190,7 @@ namespace budget_api.Services
                 }
                 else
                 {
-                    // Pending (non-duplicate auto-included) or Confirmed (reviewer-approved duplicate)
+                    // Pending (not reviewed, auto-included) or Approved (explicitly reviewed and accepted)
                     tx.ImportStatus = ImportStatus.Confirmed;
                     balanceDelta += tx.TransactionType == TransactionType.Income ? tx.Amount : -tx.Amount;
                     importedCount++;
@@ -233,7 +247,30 @@ namespace budget_api.Services
 
         // ── Helpers ──────────────────────────────────────────────────────────────
 
-        private static List<ImportCsvRecord> ParseCsv(IFormFile file)
+        private async Task<IImportFormatStrategy> ResolveStrategyAsync(Guid walletId, IFormFile file)
+        {
+            // User-defined profile takes priority
+            var profile = await _profileRepository.GetByWalletIdAsync(walletId);
+            if (profile != null)
+                return new UserDefinedStrategy(profile);
+
+            // Detect format from headers and pick matching strategy
+            using var reader = new StreamReader(file.OpenReadStream());
+            using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                MissingFieldFound = null,
+                HeaderValidated = null,
+            });
+
+            csv.Read();
+            csv.ReadHeader();
+            var headers = csv.HeaderRecord ?? [];
+
+            return _strategies.FirstOrDefault(s => s.CanHandle(headers))
+                ?? throw new FormatException("Unrecognized CSV format. Please configure an import profile for this wallet.");
+        }
+
+        private static List<ImportCsvRecord> ParseCsv(IFormFile file, IImportFormatStrategy strategy)
         {
             var config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
@@ -244,7 +281,13 @@ namespace budget_api.Services
             using var reader = new StreamReader(file.OpenReadStream());
             using var csv = new CsvReader(reader, config);
 
-            return csv.GetRecords<ImportCsvRecord>().ToList();
+            csv.Read();
+            csv.ReadHeader();
+            csv.Context.RegisterClassMap(strategy.GetClassMap());
+
+            return csv.GetRecords<ImportCsvRecord>()
+                      .Where(r => !string.IsNullOrWhiteSpace(r.Date))
+                      .ToList();
         }
 
         private static DateOnly ParseDate(string dateStr)
@@ -256,16 +299,6 @@ namespace budget_api.Services
                     return date;
             }
             throw new FormatException($"Unable to parse date: '{dateStr}'. Expected formats: yyyy-MM-dd, MM/dd/yyyy.");
-        }
-
-        private static TransactionType ParseTransactionType(string type)
-        {
-            return type.Trim().ToLowerInvariant() switch
-            {
-                "income" or "credit" => TransactionType.Income,
-                "expense" or "debit" => TransactionType.Expense,
-                _ => throw new FormatException($"Unknown transaction type: '{type}'. Expected Income or Expense.")
-            };
         }
 
         private static string ComputeHash(Guid walletId, DateOnly date, decimal amount, string? rawDescription)
