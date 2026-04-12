@@ -188,6 +188,9 @@ DocProject/Help/html
 # Click-Once directory
 publish/
 
+# EF Core migration bundle (Linux binary, build artifact)
+migrate
+
 # Publish Web Output
 *.[Pp]ublish.xml
 *.azurePubxml

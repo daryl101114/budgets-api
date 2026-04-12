@@ -1,0 +1,11 @@
+# Use this workspace to collaborate
+workspace:
+  id: ""
+
+localResources:
+  collections:
+    - ..\bin\Debug\net8.0\Budget API.postman_collection.json
+    - ..\Budget API.postman_collection.json
+    - ..\budget-api.Tests\bin\Debug\net8.0\Budget API.postman_collection.json
+  specs:
+    - ..\obj\Debug\net8.0\EndpointInfo\budget-api.json
