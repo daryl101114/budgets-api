@@ -10,6 +10,7 @@ namespace budget_api.Repositories.Interface
         Task<IEnumerable<ImportBatch>> GetByUserIdAsync(Guid userId, ImportBatchStatus? status = null);
         Task<List<Transaction>> GetBatchTransactionsAsync(Guid batchId);
         Task<HashSet<string>> GetExistingHashesAsync(Guid walletId);
+        Task HardDeleteTransactionsAsync(List<Transaction> transactions);
         Task<bool> SaveChangesAsync();
     }
 }

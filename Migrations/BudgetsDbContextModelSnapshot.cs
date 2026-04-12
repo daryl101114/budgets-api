@@ -263,7 +263,8 @@ namespace budget_api.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Color")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -272,7 +273,8 @@ namespace budget_api.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Icon")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<bool>("IsFixed")
                         .HasColumnType("bit");

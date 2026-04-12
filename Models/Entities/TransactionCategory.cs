@@ -22,8 +22,10 @@ namespace budget_api.Models.Entities
 
         public bool IsFixed { get; set; } = false;
 
+        [MaxLength(50)]
         public string? Icon { get; set; }
 
+        [MaxLength(7)]
         public string? Color { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

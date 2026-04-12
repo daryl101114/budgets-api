@@ -17,5 +17,8 @@ namespace budget_api.Models.CSV.Strategies
                 "sale"    or "fee"    => TransactionType.Expense,
                 _ => throw new FormatException($"Unknown transaction type: '{type}'.")
             };
+
+        public string CleanDescription(ImportCsvRecord record) =>
+            DescriptionCleaner.CleanSapphire(record.Description ?? record.RawDescription);
     }
 }

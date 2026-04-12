@@ -247,7 +247,7 @@
     <p><strong>Framework:</strong> ASP.NET Core 8 Web API</p>
     <p><strong>Database:</strong> SQL Server (SQLEXPRESS) via EF Core 8</p>
     <p><strong>Auth:</strong> JWT Bearer (HttpOnly cookie delivery)</p>
-    <p><strong>Version:</strong> Post Phase 2.8 — Import Batch</p>
+    <p><strong>Version:</strong> Post Phase 5.1 — Description Cleaning Pipeline</p>
     <p><strong>Date:</strong> April 2026</p>
   </div>
   <span class="badge">Implementation Reference</span>
@@ -426,18 +426,22 @@
   </ul>
 
   <h3 id="model-category">5.4 TransactionCategory</h3>
-  <div class="callout">Fields <code>Icon</code> and <code>Color</code> are implemented but were not in the original design doc.</div>
+  <div class="callout">
+    Fields <code>Icon</code> and <code>Color</code> are implemented but were not in the original design doc.
+    <code>MaxLength</code> constraints (<code>Icon</code>: 50, <code>Color</code>: 7) are enforced at the DB level via migration <code>20260411213636</code>.
+    System categories are identified by <code>UserId IS NULL</code> — there is no <code>IsSystem</code> column.
+    System categories cannot be modified or deleted. <code>IsFixed</code> indicates fixed vs. variable expense type.
+  </div>
   <table>
     <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
     <tr><td>Id</td><td>Guid</td><td>PK</td></tr>
-    <tr><td>UserId</td><td>Guid?</td><td>Null = system category</td></tr>
-    <tr><td>BucketId</td><td>Guid?</td><td>FK → SpendingBuckets</td></tr>
-    <tr><td>Name</td><td>string(100)</td><td></td></tr>
-    <tr><td><strong>Icon</strong></td><td>string(50)?</td><td></td></tr>
-    <tr><td><strong>Color</strong></td><td>string(7)?</td><td>Hex, e.g. <code>#FF5733</code></td></tr>
-    <tr><td>IsSystem</td><td>bool</td><td>System categories cannot be deleted</td></tr>
+    <tr><td>UserId</td><td>Guid?</td><td>NULL = system category. Set = user-created.</td></tr>
+    <tr><td>BucketId</td><td>Guid</td><td>FK → SpendingBuckets (required)</td></tr>
+    <tr><td>CategoryName</td><td>string(100)</td><td></td></tr>
+    <tr><td>IsFixed</td><td>bool</td><td>True = fixed expense (e.g. rent). Default false.</td></tr>
+    <tr><td><strong>Icon</strong></td><td>string(50)?</td><td>UI icon identifier</td></tr>
+    <tr><td><strong>Color</strong></td><td>string(7)?</td><td>Hex color, e.g. <code>#FF5733</code></td></tr>
     <tr><td>CreatedAt</td><td>DateTime</td><td>UTC</td></tr>
-    <tr><td>UpdatedAt</td><td>DateTime</td><td>UTC</td></tr>
     <tr><td>DeletedAt</td><td>DateTime?</td><td>Soft delete</td></tr>
   </table>
 
@@ -640,7 +644,28 @@ Step 3: Confirm or Rollback</code></pre>
   <p><strong>Content-Type:</strong> <code>multipart/form-data</code><br/>
   <strong>Form field:</strong> <code>file</code> — must be a <code>.csv</code> file</p>
 
-  <p><strong>Expected CSV columns:</strong></p>
+  <p><strong>CSV format auto-detection:</strong> The import pipeline uses a strategy pattern. Format is detected from CSV headers:</p>
+  <table>
+    <tr><th>Format</th><th>Detection header</th><th>Description cleaning</th></tr>
+    <tr><td>Chase Checking</td><td><code>Posting Date</code></td><td>Yes — BankTxnType-based (see below)</td></tr>
+    <tr><td>Chase Sapphire</td><td><code>Transaction Date</code></td><td>Yes — strips <code>*CODE</code> suffix, title-cases</td></tr>
+    <tr><td>Generic</td><td><code>Date</code></td><td>No — stored as-is</td></tr>
+    <tr><td>User-defined</td><td>Configured per wallet</td><td>No — stored as-is</td></tr>
+  </table>
+
+  <p><strong>Description cleaning (Chase formats only):</strong> The raw CSV value is always preserved in <code>RawDescription</code>. <code>Description</code> is set to a cleaned, user-facing merchant name. Chase Checking cleaning is routed by <code>BankTxnType</code>:</p>
+  <table>
+    <tr><th>BankTxnType</th><th>Raw example</th><th>Cleaned result</th></tr>
+    <tr><td><code>DEBIT_CARD</code></td><td><code>AMAZON.COM*AB12CD34 SEATTLE WA 03/23</code></td><td><code>Amazon.com</code></td></tr>
+    <tr><td><code>ACH_DEBIT</code> / <code>ACH_CREDIT</code></td><td><code>Orig CO Name:NETFLIX INC Orig ID:123...</code></td><td><code>Netflix Inc</code></td></tr>
+    <tr><td><code>ACCT_XFER</code></td><td><code>Online Transfer to chk ...1234 transaction#: 123</code></td><td><code>Transfer to Checking ...1234</code></td></tr>
+    <tr><td><code>QUICKPAY_DEBIT</code></td><td><code>Zelle Payment To John Smith</code></td><td><code>John Smith</code></td></tr>
+    <tr><td><code>QUICKPAY_CREDIT</code></td><td><code>Zelle Payment From Jane Doe</code></td><td><code>Jane Doe</code></td></tr>
+    <tr><td><code>LOAN_PMT</code></td><td><code>Payment to Chase card ending 1234</code></td><td><code>Chase Card Ending 1234</code></td></tr>
+    <tr><td><code>MISC_DEBIT</code> / <code>MISC_CREDIT</code> / unknown</td><td><code>MISCELLANEOUS ENTRY</code></td><td><code>Miscellaneous Entry</code> (title-cased)</td></tr>
+  </table>
+
+  <p><strong>Expected CSV columns (Generic format):</strong></p>
   <table>
     <tr><th>Column</th><th>Required</th><th>Notes</th></tr>
     <tr><td>Date</td><td>Yes</td><td>Parseable date string</td></tr>
@@ -733,9 +758,9 @@ hash   = SHA256(UTF8(input)).ToHexString().ToLower()   // 64-char hex</code></pr
   <div class="endpoint"><span class="method post">POST</span><span class="path">/api/import/{id}/rollback</span></div>
   <p>Reverses a confirmed batch using <strong>delta reversal</strong> (not full recalculation):</p>
   <ol>
-    <li>Loads all non-soft-deleted batch transactions (these are all Confirmed at this point)</li>
+    <li>Loads all batch transactions (Confirmed only at this point)</li>
     <li>Reverses wallet balance delta: Income → <code>balance -= amount</code>, Expense → <code>balance += amount</code></li>
-    <li>Soft-deletes all non-soft-deleted batch transactions</li>
+    <li><strong>Hard-deletes</strong> all batch transactions (permanent removal, not soft-delete)</li>
     <li><code>Batch.Status = RolledBack</code>, <code>RolledBackAt = UTC now</code></li>
   </ol>
   <p><strong>Response:</strong> <code>200 OK</code> — updated <code>ImportBatchDto</code><br/>
@@ -819,18 +844,25 @@ hash   = SHA256(UTF8(input)).ToHexString().ToLower()   // 64-char hex</code></pr
     <tr><td>2.2</td><td>Transactions — manual CRUD with balance adjustment</td><td><span class="status done">Done</span></td></tr>
     <tr><td>2.3</td><td>SpendingBuckets — CRUD</td><td><span class="status done">Done</span></td></tr>
     <tr><td>2.4</td><td>TransactionCategories — system + user-scoped, soft delete</td><td><span class="status done">Done</span></td></tr>
+    <tr><td>2.5</td><td>Seed data — 7 spending buckets + 20 default system categories (migration <code>20260411213636</code>)</td><td><span class="status done">Done</span></td></tr>
     <tr><td>2.6</td><td>Budgets — CRUD, one-active-per-user constraint</td><td><span class="status done">Done</span></td></tr>
     <tr><td>2.7</td><td>BudgetAllocations — nested CRUD, ≤100% validation</td><td><span class="status done">Done</span></td></tr>
-    <tr><td>2.8</td><td>ImportBatch — CSV upload, duplicate detection, batch approve/reject, confirm, rollback</td><td><span class="status done">Done</span></td></tr>
+    <tr><td>2.8</td><td>ImportBatch — CSV upload, duplicate detection, batch approve/reject, confirm, rollback (hard-delete on rollback)</td><td><span class="status done">Done</span></td></tr>
+    <tr><td>5.1</td><td>Description cleaning pipeline — Chase Checking (BankTxnType-based) + Chase Sapphire (<code>*CODE</code> stripping). <code>CleanDescription</code> added to <code>IImportFormatStrategy</code> with default no-op for Generic/UserDefined.</td><td><span class="status done">Done</span></td></tr>
   </table>
 
   <h3>Planned</h3>
   <table>
     <tr><th>Phase</th><th>Feature</th><th>Status</th></tr>
-    <tr><td>3.1</td><td>Recurring transactions</td><td><span class="status planned">Planned</span></td></tr>
-    <tr><td>3.2</td><td>Reports / spending summaries</td><td><span class="status planned">Planned</span></td></tr>
-    <tr><td>3.3</td><td>Notifications / budget alerts</td><td><span class="status planned">Planned</span></td></tr>
-    <tr><td>4.0</td><td>Multi-currency support</td><td><span class="status planned">Planned</span></td></tr>
+    <tr><td>2.3</td><td>Budget vs Actual aggregation — <code>GET /api/budgets/{id}/progress</code></td><td><span class="status planned">Planned</span></td></tr>
+    <tr><td>2.4</td><td>Overspend detection per bucket</td><td><span class="status planned">Planned</span></td></tr>
+    <tr><td>2.5</td><td>Budget duplication (copy as template)</td><td><span class="status planned">Planned</span></td></tr>
+    <tr><td>4.1</td><td>CategorizationRule entity + migration</td><td><span class="status planned">Planned</span></td></tr>
+    <tr><td>4.2–4.6</td><td>Auto-categorization engine, seed rules, learned rules, rule CRUD + test endpoint</td><td><span class="status planned">Planned</span></td></tr>
+    <tr><td>5.2</td><td>Bank of America CSV parser</td><td><span class="status planned">Planned</span></td></tr>
+    <tr><td>5.3</td><td>Wells Fargo CSV parser</td><td><span class="status planned">Planned</span></td></tr>
+    <tr><td>5.5</td><td>Budget vs Actual monthly report</td><td><span class="status planned">Planned</span></td></tr>
+    <tr><td>5.8</td><td>Data export (CSV and PDF)</td><td><span class="status planned">Planned</span></td></tr>
   </table>
 </div>
 

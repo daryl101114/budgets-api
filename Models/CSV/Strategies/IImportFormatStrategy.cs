@@ -8,5 +8,6 @@ namespace budget_api.Models.CSV.Strategies
         bool CanHandle(string[] headers);
         ClassMap<ImportCsvRecord> GetClassMap();
         TransactionType ParseTransactionType(string type);
+        string CleanDescription(ImportCsvRecord record) => record.Description ?? string.Empty;
     }
 }

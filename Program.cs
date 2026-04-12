@@ -20,11 +20,18 @@ namespace budget_api
         {
 
             //Configure Logger
-            Log.Logger = new LoggerConfiguration()
+            var logConfig = new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                .WriteTo.Console()
-                .WriteTo.File("C:\\Users\\daryl\\OneDrive\\Documents\\Budget-API-Logs\\log-.txt", rollingInterval: RollingInterval.Day)
-                .CreateLogger();
+                .WriteTo.Console();
+
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Production")
+            {
+                logConfig = logConfig.WriteTo.File(
+                    "C:\\Users\\daryl\\OneDrive\\Documents\\Budget-API-Logs\\log-.txt",
+                    rollingInterval: RollingInterval.Day);
+            }
+
+            Log.Logger = logConfig.CreateLogger();
 
             var builder = WebApplication.CreateBuilder(args);
             var allowedOrigin = builder.Configuration["Cors:AllowedOrigin"]

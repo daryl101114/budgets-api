@@ -7,7 +7,7 @@ namespace budget_api.Controllers
 {
     [ApiController]
     [Authorize]
-    [Route("api/transaction-categories")]
+    [Route("api/transactioncategories")]
     public class TransactionCategoryController : ControllerBase
     {
         private readonly ILogger<TransactionCategoryController> _logger;
@@ -64,8 +64,8 @@ namespace budget_api.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
                 if (userId == null) return Unauthorized();
 
-                await _categoryService.CreateCategoryAsync(dto, new Guid(userId));
-                return StatusCode(201, "Category created.");
+                var created = await _categoryService.CreateCategoryAsync(dto, new Guid(userId));
+                return CreatedAtAction(nameof(GetCategory), new { id = created.Id }, created);
             }
             catch (Exception ex)
             {

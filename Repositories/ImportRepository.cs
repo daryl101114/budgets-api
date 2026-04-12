@@ -41,6 +41,12 @@ namespace budget_api.Repositories
                 .ToListAsync();
         }
 
+        public Task HardDeleteTransactionsAsync(List<Transaction> transactions)
+        {
+            _context.Transactions.RemoveRange(transactions);
+            return Task.CompletedTask;
+        }
+
         public async Task<HashSet<string>> GetExistingHashesAsync(Guid walletId)
         {
             var hashes = await _context.Transactions

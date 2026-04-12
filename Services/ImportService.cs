@@ -85,7 +85,7 @@ namespace budget_api.Services
                     Amount = amount,
                     TransactionType = txType,
                     Date = date,
-                    Description = record.Description,
+                    Description = strategy.CleanDescription(record),
                     RawDescription = rawDescription,
                     BankTxnType = record.BankTxnType,
                     CheckNumber = record.CheckNumber,
@@ -234,10 +234,7 @@ namespace budget_api.Services
                 wallet.UpdatedAt = DateTime.UtcNow;
             }
 
-            foreach (var tx in transactions)
-            {
-                tx.DeletedAt = DateTime.UtcNow;
-            }
+            await _importRepository.HardDeleteTransactionsAsync(transactions);
 
             batch.Status = ImportBatchStatus.RolledBack;
             batch.RolledBackAt = DateTime.UtcNow;

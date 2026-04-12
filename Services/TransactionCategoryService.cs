@@ -32,13 +32,14 @@ namespace budget_api.Services
             return _mapper.Map<TransactionCategoryDto>(category);
         }
 
-        public async Task CreateCategoryAsync(CreateTransactionCategoryDto dto, Guid userId)
+        public async Task<TransactionCategoryDto> CreateCategoryAsync(CreateTransactionCategoryDto dto, Guid userId)
         {
             var category = _mapper.Map<TransactionCategory>(dto);
             category.UserId = userId;
             category.CreatedAt = DateTime.UtcNow;
             await _categoryRepository.CreateCategoryAsync(category);
             await _categoryRepository.SaveChangesAsync();
+            return _mapper.Map<TransactionCategoryDto>(category);
         }
 
         public async Task UpdateCategoryAsync(Guid categoryId, Guid userId, UpdateTransactionCategoryDto dto)
@@ -46,8 +47,11 @@ namespace budget_api.Services
             var category = await _categoryRepository.GetCategoryByIdAsync(categoryId)
                 ?? throw new KeyNotFoundException($"Category {categoryId} not found.");
 
-            if (category.UserId != userId)
+            if (category.UserId == null)
                 throw new UnauthorizedAccessException("System categories cannot be modified.");
+
+            if (category.UserId != userId)
+                throw new UnauthorizedAccessException("You do not have permission to modify this category.");
 
             _mapper.Map(dto, category);
             await _categoryRepository.UpdateCategoryAsync(category);
@@ -59,8 +63,11 @@ namespace budget_api.Services
             var category = await _categoryRepository.GetCategoryByIdAsync(categoryId)
                 ?? throw new KeyNotFoundException($"Category {categoryId} not found.");
 
-            if (category.UserId != userId)
+            if (category.UserId == null)
                 throw new UnauthorizedAccessException("System categories cannot be deleted.");
+
+            if (category.UserId != userId)
+                throw new UnauthorizedAccessException("You do not have permission to delete this category.");
 
             await _categoryRepository.SoftDeleteAsync(category);
             await _categoryRepository.SaveChangesAsync();

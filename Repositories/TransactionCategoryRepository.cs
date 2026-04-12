@@ -41,8 +41,8 @@ namespace budget_api.Repositories
 
         public Task SoftDeleteAsync(TransactionCategory category)
         {
+            // Entity is already tracked from GetCategoryByIdAsync; just set the field
             category.DeletedAt = DateTime.UtcNow;
-            _context.TransactionCategory.Update(category);
             return Task.CompletedTask;
         }
 
