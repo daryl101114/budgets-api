@@ -27,6 +27,24 @@ jobs:
       - name: Build migration bundle
         run: dotnet ef migrations bundle --self-contained -r linux-x64 -o ./migrate
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Allow runner IP on port 22
+        id: whitelist
+        run: |
+          RUNNER_IP=$(curl -s https://checkip.amazonaws.com)
+          echo "runner_ip=$RUNNER_IP" >> $GITHUB_OUTPUT
+          aws ec2 authorize-security-group-ingress \
+            --group-id ${{ secrets.EC2_SG_ID }} \
+            --protocol tcp \
+            --port 22 \
+            --cidr "$RUNNER_IP/32"
+
       - name: Copy app files to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -63,3 +81,12 @@ jobs:
             sudo chown -R www-data:www-data /var/www/budgifyapi
             sudo systemctl restart budgifyapi
             sudo systemctl status budgifyapi --no-pager
+
+      - name: Remove runner IP from security group
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id ${{ secrets.EC2_SG_ID }} \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${{ steps.whitelist.outputs.runner_ip }}/32"
